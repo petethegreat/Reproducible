@@ -1,0 +1,38 @@
+---
+title: "Reproducible Research: Storm Data Analysis"
+output: 
+  html_document:
+    keep_md: true
+---
+Reproducible Research assignment 2: Storm Data
+==============================================================
+
+
+# Title
+
+## Introduction
+some notes
+
+## obtaining data
+data comes from blah
+```{r}
+destfile='StormData.csv.bz2'
+if (! file.exists(destfile))
+{
+    download.file('https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2',dest=destfile,method='curl')
+}
+stormData<-read.csv('./StormData.csv.bz2')
+head(stormData)
+```
+
+questions: what event types are worst for population health
+panel plot fatalities vs magnitude, colour = evtype
+injuries vs magnitude, colour = evetype
+
+what storms do most damage/are most expensive
+plot propdamageexp vs magnitude, colour = eventtype
+
+where do these occur most
+plot lat and long, colour = mag, on a map of US
+
+
