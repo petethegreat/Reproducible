@@ -171,33 +171,17 @@ start by converting EVTYPE to lower case and BGN_DATE to date class
 
 ```r
 library(dplyr)
-```
-
-```
-## 
-## Attaching package: 'dplyr'
-```
-
-```
-## The following objects are masked from 'package:stats':
-## 
-##     filter, lag
-```
-
-```
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
-
-```r
 stormData$EVTYPE<-tolower(stormData$EVTYPE)
 stormData$BGN_DATE<-as.Date(stormData$BGN_DATE,format='%m/%d/%Y')
 
 # should convert damge values to actual damage numbers, then do the filtering.
 
 storm96ecoHealth<-stormData %>% filter(BGN_DATE > '1996-01-01') %>% filter(PROPDMG >0 | CROPDMG > 0| INJURIES >0 | FATALITIES >0)
+
+# maybe put this in with the initial load, and only keep the slimmed things.
 ```
+
+
 
 At this point, there are 186 unique EVTYPE codes, which should be much easier to deal with.
 

@@ -354,28 +354,14 @@ Winter Weather Z </p>
 <p>start by converting EVTYPE to lower case and BGN_DATE to date class</p>
 
 <pre><code class="r">library(dplyr)
-</code></pre>
-
-<pre><code>## 
-## Attaching package: &#39;dplyr&#39;
-</code></pre>
-
-<pre><code>## The following objects are masked from &#39;package:stats&#39;:
-## 
-##     filter, lag
-</code></pre>
-
-<pre><code>## The following objects are masked from &#39;package:base&#39;:
-## 
-##     intersect, setdiff, setequal, union
-</code></pre>
-
-<pre><code class="r">stormData$EVTYPE&lt;-tolower(stormData$EVTYPE)
+stormData$EVTYPE&lt;-tolower(stormData$EVTYPE)
 stormData$BGN_DATE&lt;-as.Date(stormData$BGN_DATE,format=&#39;%m/%d/%Y&#39;)
 
 # should convert damge values to actual damage numbers, then do the filtering.
 
 storm96ecoHealth&lt;-stormData %&gt;% filter(BGN_DATE &gt; &#39;1996-01-01&#39;) %&gt;% filter(PROPDMG &gt;0 | CROPDMG &gt; 0| INJURIES &gt;0 | FATALITIES &gt;0)
+
+# maybe put this in with the initial load, and only keep the slimmed things.
 </code></pre>
 
 <p>At this point, there are 186 unique EVTYPE codes, which should be much easier to deal with.</p>
