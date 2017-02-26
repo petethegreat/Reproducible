@@ -218,7 +218,7 @@ if (! file.exists(destfile))
 {
     download.file(&#39;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2&#39;,dest=destfile,method=&#39;curl&#39;)
 }
-stormData&lt;-read.csv(&#39;./StormData.csv.bz2&#39;)
+stormData&lt;-read.csv(&#39;./StormData.csv.bz2&#39;,stringsAsFactors=FALSE)
 head(stormData)
 </code></pre>
 
@@ -258,6 +258,137 @@ head(stormData)
 ## 5     3412      8642          0          0              5
 ## 6     3450      8748          0          0              6
 </code></pre>
+
+<h2>Data Processing</h2>
+
+<p>There are some inconsitencies in the event type designations, for example:</p>
+
+<pre><code class="r">length(unique(stormData$EVTYPE))
+</code></pre>
+
+<pre><code>## [1] 985
+</code></pre>
+
+<pre><code class="r">moose&lt;-unique(tolower(stormData$EVTYPE))
+length(moose)
+</code></pre>
+
+<pre><code>## [1] 898
+</code></pre>
+
+<pre><code class="r">moose[grep(&#39;aval&#39;,moose)]
+</code></pre>
+
+<pre><code>## [1] &quot;avalanche&quot;                     &quot;avalance&quot;                     
+## [3] &quot;heavy snow/blizzard/avalanche&quot;
+</code></pre>
+
+<pre><code class="r">sum(grepl(&#39;tstm&#39;,moose))
+</code></pre>
+
+<pre><code>## [1] 29
+</code></pre>
+
+<pre><code class="r">sum(grepl(&#39;thunderstorm&#39;,moose))
+</code></pre>
+
+<pre><code>## [1] 81
+</code></pre>
+
+<p>There are 87 event types that differ only in the case (upper or lower) of their lettering, &#39;avalanche&#39; is missspelled at least once, and high winds may be categorised as something like &#39;tstm wind&#39; or &#39;thunderstorm wind&#39;, with variations based on wind speeds/gust speeds. All of these variations make it difficult to compare weather events. To make it easier, will first convert EVTYPE to lower case, and then create an additional classification column based on EVTYPE.</p>
+
+<p>permitted event types:
+Astronomical Low Tide Z
+Avalanche Z
+Blizzard Z
+Coastal Flood Z
+Cold/Wind Chill Z
+Debris Flow C
+Dense Fog Z
+Dense Smoke Z
+Drought Z
+Dust Devil C
+Dust Storm Z
+Excessive Heat Z
+Extreme Cold/Wind Chill Z
+Flash Flood C
+Flood C
+Frost/Freeze Z
+Funnel Cloud C
+Freezing Fog Z
+Hail C
+Heat Z
+Heavy Rain C
+Heavy Snow Z
+High Surf Z
+High Wind Z
+Hurricane (Typhoon) Z
+Ice Storm Z
+Lake-Effect Snow Z
+Lakeshore Flood Z
+Lightning C
+Marine Hail M
+Marine High Wind M
+Marine Strong Wind M
+Marine Thunderstorm Wind M
+Rip Current Z
+Seiche Z
+Sleet Z
+Storm Surge/Tide Z
+Strong Wind Z
+Thunderstorm Wind C
+Tornado C
+Tropical Depression Z
+Tropical Storm Z
+Tsunami Z
+Volcanic Ash Z
+Waterspout M
+Wildfire Z
+Winter Storm Z
+Winter Weather Z </p>
+
+<p>Filter stuff. Only from January 96 were events</p>
+
+<p>based on <a href="https://www.coursera.org/learn/reproducible-research/discussions/weeks/4/threads/IdtP_JHzEeaePQ71AQUtYw">this post</a> in course discussion forums, it was only after January 1996 that they started recording events of all types. Tornado data was preset from the beginning (1950). Will omit data from before 1996, as this does not represent all event types fairly. Also, we are interested in health effects (i.e. injuries and fatalities) and economic effects (property and crop damage). Will omit observations that have no injuries or fatalities and do no damage</p>
+
+<p>start by converting EVTYPE to lower case and BGN_DATE to date class</p>
+
+<pre><code class="r">library(dplyr)
+</code></pre>
+
+<pre><code>## 
+## Attaching package: &#39;dplyr&#39;
+</code></pre>
+
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     filter, lag
+</code></pre>
+
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     intersect, setdiff, setequal, union
+</code></pre>
+
+<pre><code class="r">stormData$EVTYPE&lt;-tolower(stormData$EVTYPE)
+stormData$BGN_DATE&lt;-as.Date(stormData$BGN_DATE,format=&#39;%m/%d/%Y&#39;)
+
+# should convert damge values to actual damage numbers, then do the filtering.
+
+storm96ecoHealth&lt;-stormData %&gt;% filter(BGN_DATE &gt; &#39;1996-01-01&#39;) %&gt;% filter(PROPDMG &gt;0 | CROPDMG &gt; 0| INJURIES &gt;0 | FATALITIES &gt;0)
+</code></pre>
+
+<p>At this point, there are 186 unique EVTYPE codes, which should be much easier to deal with.</p>
+
+<p>questions: what event types are worst for population health
+panel plot fatalities vs magnitude, colour = evtype
+injuries vs magnitude, colour = evetype</p>
+
+<p>what storms do most damage/are most expensive
+plot propdamageexp vs magnitude, colour = eventtype</p>
+
+<p>where do these occur most
+plot lat and long, colour = mag, on a map of US</p>
 
 </body>
 
