@@ -23,6 +23,7 @@ if (! file.exists(destfile))
     download.file('https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2',dest=destfile,method='curl')
 }
 stormData<-read.csv('./StormData.csv.bz2',stringsAsFactors=FALSE)
+
 head(stormData)
 ```
 
@@ -66,7 +67,7 @@ head(stormData)
 
 ## Data Processing
 
-There are some inconsitencies in the event type designations, for example:
+The Event type code (EVTYPE) is important, as it will be used to categorise the data. Unfortunately, there are many errors and inconsistencies in the raw data. For example:
 
 ```r
 length(unique(stormData$EVTYPE))
@@ -110,77 +111,142 @@ sum(grepl('thunderstorm',moose))
 ## [1] 81
 ```
 
-There are 87 event types that differ only in the case (upper or lower) of their lettering, 'avalanche' is missspelled at least once, and high winds may be categorised as something like 'tstm wind' or 'thunderstorm wind', with variations based on wind speeds/gust speeds. All of these variations make it difficult to compare weather events. To make it easier, will first convert EVTYPE to lower case, and then create an additional classification column based on EVTYPE.
+There are 87 event types that differ only in the case (upper or lower) of their lettering, 'avalanche' is missspelled at least once, and high winds may be categorised as something like 'tstm wind' or 'thunderstorm wind', with variations based on wind speeds/gust speeds. All of these variations make it difficult to compare weather events. According to the [instructions](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) on storm data preparation, there are only 48 allowed event types, which are listed below: 
 
-permitted event types:
-Astronomical Low Tide Z
-Avalanche Z
-Blizzard Z
-Coastal Flood Z
-Cold/Wind Chill Z
-Debris Flow C
-Dense Fog Z
-Dense Smoke Z
-Drought Z
-Dust Devil C
-Dust Storm Z
-Excessive Heat Z
-Extreme Cold/Wind Chill Z
-Flash Flood C
-Flood C
-Frost/Freeze Z
-Funnel Cloud C
-Freezing Fog Z
-Hail C
-Heat Z
-Heavy Rain C
-Heavy Snow Z
-High Surf Z
-High Wind Z
-Hurricane (Typhoon) Z
-Ice Storm Z
-Lake-Effect Snow Z
-Lakeshore Flood Z
-Lightning C
-Marine Hail M
-Marine High Wind M
-Marine Strong Wind M
-Marine Thunderstorm Wind M
-Rip Current Z
-Seiche Z
-Sleet Z
-Storm Surge/Tide Z
-Strong Wind Z
-Thunderstorm Wind C
-Tornado C
-Tropical Depression Z
-Tropical Storm Z
-Tsunami Z
-Volcanic Ash Z
-Waterspout M
-Wildfire Z
-Winter Storm Z
-Winter Weather Z 
+-Astronomical Low Tide 
+-Avalanche 
+-Blizzard 
+-Coastal Flood 
+-Cold/Wind Chill 
+-Debris Flow 
+-Dense Fog 
+-Dense Smoke 
+-Drought 
+-Dust Devil 
+-Dust Storm 
+-Excessive Heat 
+-Extreme Cold/Wind Chill 
+-Flash Flood 
+-Flood 
+-Frost/Freeze 
+-Funnel Cloud 
+-Freezing Fog 
+-Hail 
+-Heat 
+-Heavy Rain 
+-Heavy Snow 
+-High Surf 
+-High Wind 
+-Hurricane (Typhoon) 
+-Ice Storm 
+-Lake-Effect Snow 
+-Lakeshore Flood 
+-Lightning 
+-Marine Hail 
+-Marine High Wind 
+-Marine Strong Wind 
+-Marine Thunderstorm Wind 
+-Rip Current 
+-Seiche 
+-Sleet 
+-Storm Surge/Tide 
+-Strong Wind 
+-Thunderstorm Wind 
+-Tornado 
+-Tropical Depression 
+-Tropical Storm 
+-Tsunami 
+-Volcanic Ash 
+-Waterspout 
+-Wildfire 
+-Winter Storm 
+-Winter Weather
 
+The raw data will need to be tidied before it can be processed effectively. First the observations (rows) of interest will be selected (as this will limit the range of EVTYPE codes that need to be corrected), and then regular expressions will be used to correct the event type codes to one of the 48 options listed above.
 
-Filter stuff. Only from January 96 were events
+based on [this post](https://www.coursera.org/learn/reproducible-research/discussions/weeks/4/threads/IdtP_JHzEeaePQ71AQUtYw) in the course discussion forums, it was only after January 1996 that NOAA started recording events of all types. Tornado data was present from the beginning (1950), but other types of weather events were reported and recorded later. Data prior to January 1996 will be omitted, as analysis of this data could introduce bias due to lack of records on certain weather types.
 
-based on [this post](https://www.coursera.org/learn/reproducible-research/discussions/weeks/4/threads/IdtP_JHzEeaePQ71AQUtYw) in course discussion forums, it was only after January 1996 that they started recording events of all types. Tornado data was preset from the beginning (1950). Will omit data from before 1996, as this does not represent all event types fairly. Also, we are interested in health effects (i.e. injuries and fatalities) and economic effects (property and crop damage). Will omit observations that have no injuries or fatalities and do no damage
-
-start by converting EVTYPE to lower case and BGN_DATE to date class
 
 ```r
 library(dplyr)
-stormData$EVTYPE<-tolower(stormData$EVTYPE)
 stormData$BGN_DATE<-as.Date(stormData$BGN_DATE,format='%m/%d/%Y')
+storm96<-stormData %>% filter(BGN_DATE >  '1996-01-01')
+```
+Crop and property damage are stored strangely, with the first few significant digits stored seperately from the dollar exponent.** blah blah **
 
-# should convert damge values to actual damage numbers, then do the filtering.
 
-storm96ecoHealth<-stormData %>% filter(BGN_DATE > '1996-01-01') %>% filter(PROPDMG >0 | CROPDMG > 0| INJURIES >0 | FATALITIES >0)
-
-# maybe put this in with the initial load, and only keep the slimmed things.
+```r
+storm96$CropDamage<-storm96$CROPDMG
+levels(storm96$CROPDMGEXP) 
 ```
 
+```
+## NULL
+```
+
+```r
+sum(storm96$CROPDMGEXP == '2')
+```
+
+```
+## [1] 0
+```
+
+```r
+sum(storm96$CROPDMGEXP == '0')
+```
+
+```
+## [1] 0
+```
+
+```r
+sum(storm96$CROPDMGEXP == '')
+```
+
+```
+## [1] 373047
+```
+
+```r
+max(storm96$CROPDMG[storm96$CROPDMGEXP == ''])
+```
+
+```
+## [1] 0
+```
+
+```r
+# scale crop damage
+thelist<-with(storm96, CROPDMGEXP=='B')
+storm96$CropDamage[thelist]<-storm96$CropDamage[thelist]*1.0e9
+thelist<-with(storm96, CROPDMGEXP=='K' | CROPDMGEXP=='k')
+storm96$CropDamage[thelist]<-storm96$CropDamage[thelist]*1.0e3
+thelist<-with(storm96, CROPDMGEXP=='M' | CROPDMGEXP=='m')
+storm96$CropDamage[thelist]<-storm96$CropDamage[thelist]*1.0e6
+
+# scale property damage
+storm96$PropDamage<-storm96$PROPDMG
+thelist<-grepl('[1-8]',storm96$PROPDMGEXP)
+sum(thelist)
+```
+
+```
+## [1] 0
+```
+
+```r
+thelist<-grepl('[bB]',storm96$PROPDMGEXP)
+storm96$PropDamage[thelist]<-storm96$PropDamage[thelist]*1.0e9
+thelist<-grepl('[mM]',storm96$PROPDMGEXP)
+storm96$PropDamage[thelist]<-storm96$PropDamage[thelist]*1.0e6
+thelist<-grepl('[kK]',storm96$PROPDMGEXP)
+storm96$PropDamage[thelist]<-storm96$PropDamage[thelist]*1.0e3
+
+# slim data based on injuries, fatalities, and property/crop damage
+storm96i<- storm96 %>% select(BGN_DATE,EVTYPE,PropDamage,CropDamage,INJURIES,FATALITIES) %>%
+filter(PropDamage>0 | CropDamage >0 | INJURIES >0 | FATALITIES >0)
+```
 
 
 At this point, there are 186 unique EVTYPE codes, which should be much easier to deal with.
