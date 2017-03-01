@@ -214,9 +214,25 @@ length(unique(slim96$EventType))
 
 
 #change mudslide or similar to debris flow
-slim96$EventType<-gsub('mud\\s?slides?','debris flow',slim96$EventType)
+slim96$EventType<-gsub('mud[\\s|-]?slides?','debris flow',slim96$EventType)
 length(unique(slim96$EventType))
 
+# remove things that can't be reclassified easily
+badcodes<-c("astronomical high tide","other")
+slim96<- slim96 %>% filter(! (EventType  %in% badcodes))
+
+# freezing rain -> sleet # assumption
+# extreme cold -> extreme cold/wind chill
+# rip currents -> rip current
+# "wild/forest fire" -> "wildfire"
+# "storm surge" -> "Storm Surge/Tide"
+# "ice jam flood (minor" -> "flood"
+# "urban/sml stream fld" -> flood
+# "fog" -> "dense fog"
+# "rough surf"-> "high surf"
+# "heavy surf"->"high surf"
+
+# got down to line 27, heavy rain
 unique(slim96$EventType)
 ```
 
