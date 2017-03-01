@@ -42,53 +42,101 @@ sum(grepl('thunderstorm',moose))
 There are 87 event types that differ only in the case (upper or lower) of their lettering, 'avalanche' is missspelled at least once, and high winds may be categorised as something like 'tstm wind' or 'thunderstorm wind', with variations based on wind speeds/gust speeds. All of these variations make it difficult to compare weather events. According to the [instructions](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) on storm data preparation, there are only 48 allowed event types, which are listed below: 
 
 -Astronomical Low Tide 
+
 -Avalanche 
+
 -Blizzard 
+
 -Coastal Flood 
+
 -Cold/Wind Chill 
+
 -Debris Flow 
+
 -Dense Fog 
+
 -Dense Smoke 
+
 -Drought 
+
 -Dust Devil 
+
 -Dust Storm 
+
 -Excessive Heat 
+
 -Extreme Cold/Wind Chill 
+
 -Flash Flood 
+
 -Flood 
+
 -Frost/Freeze 
+
 -Funnel Cloud 
+
 -Freezing Fog 
+
 -Hail 
+
 -Heat 
+
 -Heavy Rain 
+
 -Heavy Snow 
+
 -High Surf 
+
 -High Wind 
--Hurricane (Typhoon) 
+
+-Hurricane (Typhoon)
+
 -Ice Storm 
+
 -Lake-Effect Snow 
+
 -Lakeshore Flood 
+
 -Lightning 
+
 -Marine Hail 
+
 -Marine High Wind 
+
 -Marine Strong Wind 
+
 -Marine Thunderstorm Wind 
+
 -Rip Current 
+
 -Seiche 
+
 -Sleet 
+
 -Storm Surge/Tide 
+
 -Strong Wind 
+
 -Thunderstorm Wind 
+
 -Tornado 
+
 -Tropical Depression 
+
 -Tropical Storm 
+
 -Tsunami 
+
 -Volcanic Ash 
+
 -Waterspout 
+
 -Wildfire 
+
 -Winter Storm 
+
 -Winter Weather
+
 
 The raw data will need to be tidied before it can be processed effectively. First the observations (rows) of interest will be selected (as this will limit the range of EVTYPE codes that need to be corrected), and then regular expressions will be used to correct the event type codes to one of the 48 options listed above.
 
@@ -131,13 +179,121 @@ thelist<-grepl('[kK]',storm96$PROPDMGEXP)
 storm96$PropDamage[thelist]<-storm96$PropDamage[thelist]*1.0e3
 
 # slim data based on injuries, fatalities, and property/crop damage
-storm96i<- storm96 %>% select(BGN_DATE,EVTYPE,PropDamage,CropDamage,INJURIES,FATALITIES) %>%
+storm96i<- storm96 %>% select(BGN_DATE,EVTYPE,PropDamage,CropDamage,INJURIES,FATALITIES,LATTITUDE,LONGITUDE) %>%
 filter(PropDamage>0 | CropDamage >0 | INJURIES >0 | FATALITIES >0)
+
 ```
 
 
-At this point, there are 186 unique EVTYPE codes, which should be much easier to deal with.
+Right now there are 222 event types. Start by casting everything to lower case, and by removing any leading whitespace
 
+```{r evntCasting1}
+storm96i$EventType<-tolower(storm96i$EVTYPE)
+storm96i$EventType<-trimws(storm96i$EventType)
+
+```
+183 unique now
+
+[1] "winter storm"              "tornado"                  
+  [3] "tstm wind"                 "high wind"                
+  [5] "flash flood"               "freezing rain"            
+  [7] "extreme cold"              "lightning"                
+  [9] "hail"                      "flood"                    
+ [11] "tstm wind/hail"            "excessive heat"           
+ [13] "rip currents"              "other"                    
+ [15] "heavy snow"                "wild/forest fire"         
+ [17] "ice storm"                 "blizzard"                 
+ [19] "storm surge"               "ice jam flood (minor"     
+ [21] "dust storm"                "strong wind"              
+ [23] "dust devil"                "urban/sml stream fld"     
+ [25] "fog"                       "rough surf"               
+ [27] "heavy surf"                "heavy rain"               
+ [29] "marine accident"           "avalanche"                
+ [31] "freeze"                    "dry microburst"           
+ [33] "winds"                     "coastal storm"            
+ [35] "erosion/cstl flood"        "river flooding"           
+ [37] "waterspout"                "damaging freeze"          
+ [39] "hurricane"                 "tropical storm"           
+ [41] "beach erosion"             "high surf"                
+ [43] "heavy rain/high surf"      "unseasonable cold"        
+ [45] "early frost"               "wintry mix"               
+ [47] "drought"                   "coastal flooding"         
+ [49] "torrential rainfall"       "landslump"                
+ [51] "hurricane edouard"         "tidal flooding"           
+ [53] "strong winds"              "extreme windchill"        
+ [55] "glaze"                     "extended cold"            
+ [57] "whirlwind"                 "heavy snow shower"        
+ [59] "light snow"                "coastal flood"            
+ [61] "mixed precip"              "cold"                     
+ [63] "freezing spray"            "downburst"                
+ [65] "mudslides"                 "microburst"               
+ [67] "mudslide"                  "snow"                     
+ [69] "snow squalls"              "wind damage"              
+ [71] "light snowfall"            "freezing drizzle"         
+ [73] "gusty wind/rain"           "gusty wind/hvy rain"      
+ [75] "wind"                      "cold temperature"         
+ [77] "heat wave"                 "cold and snow"            
+ [79] "rain/snow"                 "tstm wind (g45)"          
+ [81] "gusty winds"               "gusty wind"               
+ [83] "tstm wind 40"              "tstm wind 45"             
+ [85] "hard freeze"               "tstm wind (41)"           
+ [87] "heat"                      "river flood"              
+ [89] "tstm wind (g40)"           "rip current"              
+ [91] "mud slide"                 "frost/freeze"             
+ [93] "snow and ice"              "agricultural freeze"      
+ [95] "winter weather"            "snow squall"              
+ [97] "icy roads"                 "thunderstorm"             
+ [99] "hypothermia/exposure"      "lake effect snow"         
+[101] "mixed precipitation"       "black ice"                
+[103] "coastalstorm"              "dam break"                
+[105] "blowing snow"              "frost"                    
+[107] "gradient wind"             "unseasonably cold"        
+[109] "tstm wind and lightning"   "wet microburst"           
+[111] "heavy surf and wind"       "funnel cloud"             
+[113] "typhoon"                   "landslides"               
+[115] "high swells"               "high winds"               
+[117] "small hail"                "unseasonal rain"          
+[119] "coastal flooding/erosion"  "tstm wind  (g45)"         
+[121] "high wind (g40)"           "tstm wind (g35)"          
+[123] "coastal erosion"           "unseasonably warm"        
+[125] "seiche"                    "coastal  flooding/erosion"
+[127] "hyperthermia/exposure"     "rock slide"               
+[129] "gusty wind/hail"           "heavy seas"               
+[131] "landspout"                 "record heat"              
+[133] "excessive snow"            "flood/flash/flood"        
+[135] "wind and wave"             "flash flood/flood"        
+[137] "light freezing rain"       "ice roads"                
+[139] "high seas"                 "rain"                     
+[141] "rough seas"                "tstm wind g45"            
+[143] "non-severe wind damage"    "warm weather"             
+[145] "thunderstorm wind (g40)"   "landslide"                
+[147] "high water"                "late season snow"         
+[149] "winter weather mix"        "rogue wave"               
+[151] "falling snow/ice"          "non-tstm wind"            
+[153] "non tstm wind"             "brush fire"               
+[155] "blowing dust"              "volcanic ash"             
+[157] "high surf advisory"        "hazardous surf"           
+[159] "wildfire"                  "cold weather"             
+[161] "ice on road"               "drowning"                 
+[163] "extreme cold/wind chill"   "marine tstm wind"         
+[165] "hurricane/typhoon"         "dense fog"                
+[167] "winter weather/mix"        "astronomical high tide"   
+[169] "heavy surf/high surf"      "tropical depression"      
+[171] "lake-effect snow"          "marine high wind"         
+[173] "thunderstorm wind"         "tsunami"                  
+[175] "storm surge/tide"          "cold/wind chill"          
+[177] "lakeshore flood"           "marine thunderstorm wind" 
+[179] "marine strong wind"        "astronomical low tide"    
+[181] "dense smoke"               "marine hail"              
+[183] "freezing fog"  
+
+
+reclassify "non tstm wind" and "non-tstm wind" as strong wind (as there is either property damage or an injury)
+```{r}
+storm96i %>% filter(EventType == 'non tstm wind' | EventType == 'non tstm wind') %>% 
+mutate(EventType = 'strong wind')
+
+```
 
 
 
