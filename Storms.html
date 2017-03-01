@@ -298,61 +298,127 @@ length(moose)
 
 <p>There are 87 event types that differ only in the case (upper or lower) of their lettering, &#39;avalanche&#39; is missspelled at least once, and high winds may be categorised as something like &#39;tstm wind&#39; or &#39;thunderstorm wind&#39;, with variations based on wind speeds/gust speeds. All of these variations make it difficult to compare weather events. According to the <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">instructions</a> on storm data preparation, there are only 48 allowed event types, which are listed below: </p>
 
-<p>-Astronomical Low Tide 
--Avalanche 
--Blizzard 
--Coastal Flood 
--Cold/Wind Chill 
--Debris Flow 
--Dense Fog 
--Dense Smoke 
--Drought 
--Dust Devil 
--Dust Storm 
--Excessive Heat 
--Extreme Cold/Wind Chill 
--Flash Flood 
--Flood 
--Frost/Freeze 
--Funnel Cloud 
--Freezing Fog 
--Hail 
--Heat 
--Heavy Rain 
--Heavy Snow 
--High Surf 
--High Wind 
--Hurricane (Typhoon) 
--Ice Storm 
--Lake-Effect Snow 
--Lakeshore Flood 
--Lightning 
--Marine Hail 
--Marine High Wind 
--Marine Strong Wind 
--Marine Thunderstorm Wind 
--Rip Current 
--Seiche 
--Sleet 
--Storm Surge/Tide 
--Strong Wind 
--Thunderstorm Wind 
--Tornado 
--Tropical Depression 
--Tropical Storm 
--Tsunami 
--Volcanic Ash 
--Waterspout 
--Wildfire 
--Winter Storm 
--Winter Weather</p>
+<p>-Astronomical Low Tide </p>
+
+<p>-Avalanche </p>
+
+<p>-Blizzard </p>
+
+<p>-Coastal Flood </p>
+
+<p>-Cold/Wind Chill </p>
+
+<p>-Debris Flow </p>
+
+<p>-Dense Fog </p>
+
+<p>-Dense Smoke </p>
+
+<p>-Drought </p>
+
+<p>-Dust Devil </p>
+
+<p>-Dust Storm </p>
+
+<p>-Excessive Heat </p>
+
+<p>-Extreme Cold/Wind Chill </p>
+
+<p>-Flash Flood </p>
+
+<p>-Flood </p>
+
+<p>-Frost/Freeze </p>
+
+<p>-Funnel Cloud </p>
+
+<p>-Freezing Fog </p>
+
+<p>-Hail </p>
+
+<p>-Heat </p>
+
+<p>-Heavy Rain </p>
+
+<p>-Heavy Snow </p>
+
+<p>-High Surf </p>
+
+<p>-High Wind </p>
+
+<p>-Hurricane (Typhoon)</p>
+
+<p>-Ice Storm </p>
+
+<p>-Lake-Effect Snow </p>
+
+<p>-Lakeshore Flood </p>
+
+<p>-Lightning </p>
+
+<p>-Marine Hail </p>
+
+<p>-Marine High Wind </p>
+
+<p>-Marine Strong Wind </p>
+
+<p>-Marine Thunderstorm Wind </p>
+
+<p>-Rip Current </p>
+
+<p>-Seiche </p>
+
+<p>-Sleet </p>
+
+<p>-Storm Surge/Tide </p>
+
+<p>-Strong Wind </p>
+
+<p>-Thunderstorm Wind </p>
+
+<p>-Tornado </p>
+
+<p>-Tropical Depression </p>
+
+<p>-Tropical Storm </p>
+
+<p>-Tsunami </p>
+
+<p>-Volcanic Ash </p>
+
+<p>-Waterspout </p>
+
+<p>-Wildfire </p>
+
+<p>-Winter Storm </p>
+
+<p>-Winter Weather</p>
 
 <p>The raw data will need to be tidied before it can be processed effectively. First the observations (rows) of interest will be selected (as this will limit the range of EVTYPE codes that need to be corrected), and then regular expressions will be used to correct the event type codes to one of the 48 options listed above.</p>
 
 <p>based on <a href="https://www.coursera.org/learn/reproducible-research/discussions/weeks/4/threads/IdtP_JHzEeaePQ71AQUtYw">this post</a> in the course discussion forums, it was only after January 1996 that NOAA started recording events of all types. Tornado data was present from the beginning (1950), but other types of weather events were reported and recorded later. Data prior to January 1996 will be omitted, as analysis of this data could introduce bias due to lack of records on certain weather types.</p>
 
 <pre><code class="r">library(dplyr)
-stormData$BGN_DATE&lt;-as.Date(stormData$BGN_DATE,format=&#39;%m/%d/%Y&#39;)
+</code></pre>
+
+<pre><code>## Warning: package &#39;dplyr&#39; was built under R version 3.1.3
+</code></pre>
+
+<pre><code>## 
+## Attaching package: &#39;dplyr&#39;
+</code></pre>
+
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     filter, lag
+</code></pre>
+
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     intersect, setdiff, setequal, union
+</code></pre>
+
+<pre><code class="r">stormData$BGN_DATE&lt;-as.Date(stormData$BGN_DATE,format=&#39;%m/%d/%Y&#39;)
 storm96&lt;-stormData %&gt;% filter(BGN_DATE &gt;  &#39;1996-01-01&#39;)
 </code></pre>
 
@@ -414,11 +480,146 @@ thelist&lt;-grepl(&#39;[kK]&#39;,storm96$PROPDMGEXP)
 storm96$PropDamage[thelist]&lt;-storm96$PropDamage[thelist]*1.0e3
 
 # slim data based on injuries, fatalities, and property/crop damage
-storm96i&lt;- storm96 %&gt;% select(BGN_DATE,EVTYPE,PropDamage,CropDamage,INJURIES,FATALITIES) %&gt;%
+slim96&lt;- storm96 %&gt;% select(BGN_DATE,EVTYPE,PropDamage,CropDamage,INJURIES,FATALITIES,LATITUDE,LONGITUDE) %&gt;%
 filter(PropDamage&gt;0 | CropDamage &gt;0 | INJURIES &gt;0 | FATALITIES &gt;0)
 </code></pre>
 
-<p>At this point, there are 186 unique EVTYPE codes, which should be much easier to deal with.</p>
+<p>Right now there are 222 event types. Start by casting everything to lower case, and by removing any leading whitespace</p>
+
+<pre><code class="r">slim96$EventType&lt;-tolower(slim96$EVTYPE)
+# trimws is new? 
+#slim96$EventType&lt;-trimws(slim96$EventType)
+slim96$EventType&lt;-gsub(&#39;^\\s+|\\s+$&#39;,&#39;&#39;,slim96$EventType)
+</code></pre>
+
+<p>reclassify &#39;non tstm wind&#39; or similar as &#39;strong wind&#39;</p>
+
+<pre><code class="r">length(unique(slim96$EventType))
+</code></pre>
+
+<pre><code>## [1] 183
+</code></pre>
+
+<pre><code class="r">slim96$EventType&lt;-gsub(&#39;non[ -]tstm wind&#39;,&#39;strong wind&#39;,slim96$EventType)
+length(unique(slim96$EventType))
+</code></pre>
+
+<pre><code>## [1] 181
+</code></pre>
+
+<p>change tstm/thunderstorm wind to thunderstorm wind</p>
+
+<pre><code class="r">change&lt;-with(slim96, (grepl(&#39;tstm&#39;,EventType) | grepl(&#39;thunderstorm&#39;,EventType)) &amp; grepl(&#39;wind&#39;,EventType))
+slim96$EventType[change]&lt;-&#39;thunderstorm wind&#39;
+length(unique(slim96$EventType))
+</code></pre>
+
+<pre><code>## [1] 167
+</code></pre>
+
+<pre><code class="r"># change &#39;blowing dust&#39; to dust devil
+slim96[&#39;EventType&#39;==&#39;blowing dust&#39;,&#39;EventType&#39;]&lt;-&#39;dust devil&#39;
+length(unique(slim96$EventType))
+</code></pre>
+
+<pre><code>## [1] 167
+</code></pre>
+
+<pre><code class="r">#change mudslide or similar to debris flow
+slim96$EventType&lt;-gsub(&#39;mud\\s?slides?&#39;,&#39;debris flow&#39;,slim96$EventType)
+length(unique(slim96$EventType))
+</code></pre>
+
+<pre><code>## [1] 165
+</code></pre>
+
+<pre><code class="r">unique(slim96$EventType)
+</code></pre>
+
+<pre><code>##   [1] &quot;winter storm&quot;              &quot;tornado&quot;                  
+##   [3] &quot;thunderstorm wind&quot;         &quot;high wind&quot;                
+##   [5] &quot;flash flood&quot;               &quot;freezing rain&quot;            
+##   [7] &quot;extreme cold&quot;              &quot;lightning&quot;                
+##   [9] &quot;hail&quot;                      &quot;flood&quot;                    
+##  [11] &quot;excessive heat&quot;            &quot;rip currents&quot;             
+##  [13] &quot;other&quot;                     &quot;heavy snow&quot;               
+##  [15] &quot;wild/forest fire&quot;          &quot;ice storm&quot;                
+##  [17] &quot;blizzard&quot;                  &quot;storm surge&quot;              
+##  [19] &quot;ice jam flood (minor&quot;      &quot;dust storm&quot;               
+##  [21] &quot;strong wind&quot;               &quot;dust devil&quot;               
+##  [23] &quot;urban/sml stream fld&quot;      &quot;fog&quot;                      
+##  [25] &quot;rough surf&quot;                &quot;heavy surf&quot;               
+##  [27] &quot;heavy rain&quot;                &quot;marine accident&quot;          
+##  [29] &quot;avalanche&quot;                 &quot;freeze&quot;                   
+##  [31] &quot;dry microburst&quot;            &quot;winds&quot;                    
+##  [33] &quot;coastal storm&quot;             &quot;erosion/cstl flood&quot;       
+##  [35] &quot;river flooding&quot;            &quot;waterspout&quot;               
+##  [37] &quot;damaging freeze&quot;           &quot;hurricane&quot;                
+##  [39] &quot;tropical storm&quot;            &quot;beach erosion&quot;            
+##  [41] &quot;high surf&quot;                 &quot;heavy rain/high surf&quot;     
+##  [43] &quot;unseasonable cold&quot;         &quot;early frost&quot;              
+##  [45] &quot;wintry mix&quot;                &quot;drought&quot;                  
+##  [47] &quot;coastal flooding&quot;          &quot;torrential rainfall&quot;      
+##  [49] &quot;landslump&quot;                 &quot;hurricane edouard&quot;        
+##  [51] &quot;tidal flooding&quot;            &quot;strong winds&quot;             
+##  [53] &quot;extreme windchill&quot;         &quot;glaze&quot;                    
+##  [55] &quot;extended cold&quot;             &quot;whirlwind&quot;                
+##  [57] &quot;heavy snow shower&quot;         &quot;light snow&quot;               
+##  [59] &quot;coastal flood&quot;             &quot;mixed precip&quot;             
+##  [61] &quot;cold&quot;                      &quot;freezing spray&quot;           
+##  [63] &quot;downburst&quot;                 &quot;debris flow&quot;              
+##  [65] &quot;microburst&quot;                &quot;snow&quot;                     
+##  [67] &quot;snow squalls&quot;              &quot;wind damage&quot;              
+##  [69] &quot;light snowfall&quot;            &quot;freezing drizzle&quot;         
+##  [71] &quot;gusty wind/rain&quot;           &quot;gusty wind/hvy rain&quot;      
+##  [73] &quot;wind&quot;                      &quot;cold temperature&quot;         
+##  [75] &quot;heat wave&quot;                 &quot;cold and snow&quot;            
+##  [77] &quot;rain/snow&quot;                 &quot;gusty winds&quot;              
+##  [79] &quot;gusty wind&quot;                &quot;hard freeze&quot;              
+##  [81] &quot;heat&quot;                      &quot;river flood&quot;              
+##  [83] &quot;rip current&quot;               &quot;frost/freeze&quot;             
+##  [85] &quot;snow and ice&quot;              &quot;agricultural freeze&quot;      
+##  [87] &quot;winter weather&quot;            &quot;snow squall&quot;              
+##  [89] &quot;icy roads&quot;                 &quot;thunderstorm&quot;             
+##  [91] &quot;hypothermia/exposure&quot;      &quot;lake effect snow&quot;         
+##  [93] &quot;mixed precipitation&quot;       &quot;black ice&quot;                
+##  [95] &quot;coastalstorm&quot;              &quot;dam break&quot;                
+##  [97] &quot;blowing snow&quot;              &quot;frost&quot;                    
+##  [99] &quot;gradient wind&quot;             &quot;unseasonably cold&quot;        
+## [101] &quot;wet microburst&quot;            &quot;heavy surf and wind&quot;      
+## [103] &quot;funnel cloud&quot;              &quot;typhoon&quot;                  
+## [105] &quot;landslides&quot;                &quot;high swells&quot;              
+## [107] &quot;high winds&quot;                &quot;small hail&quot;               
+## [109] &quot;unseasonal rain&quot;           &quot;coastal flooding/erosion&quot; 
+## [111] &quot;high wind (g40)&quot;           &quot;coastal erosion&quot;          
+## [113] &quot;unseasonably warm&quot;         &quot;seiche&quot;                   
+## [115] &quot;coastal  flooding/erosion&quot; &quot;hyperthermia/exposure&quot;    
+## [117] &quot;rock slide&quot;                &quot;gusty wind/hail&quot;          
+## [119] &quot;heavy seas&quot;                &quot;landspout&quot;                
+## [121] &quot;record heat&quot;               &quot;excessive snow&quot;           
+## [123] &quot;flood/flash/flood&quot;         &quot;wind and wave&quot;            
+## [125] &quot;flash flood/flood&quot;         &quot;light freezing rain&quot;      
+## [127] &quot;ice roads&quot;                 &quot;high seas&quot;                
+## [129] &quot;rain&quot;                      &quot;rough seas&quot;               
+## [131] &quot;non-severe wind damage&quot;    &quot;warm weather&quot;             
+## [133] &quot;landslide&quot;                 &quot;high water&quot;               
+## [135] &quot;late season snow&quot;          &quot;winter weather mix&quot;       
+## [137] &quot;rogue wave&quot;                &quot;falling snow/ice&quot;         
+## [139] &quot;brush fire&quot;                &quot;blowing dust&quot;             
+## [141] &quot;volcanic ash&quot;              &quot;high surf advisory&quot;       
+## [143] &quot;hazardous surf&quot;            &quot;wildfire&quot;                 
+## [145] &quot;cold weather&quot;              &quot;ice on road&quot;              
+## [147] &quot;drowning&quot;                  &quot;extreme cold/wind chill&quot;  
+## [149] &quot;hurricane/typhoon&quot;         &quot;dense fog&quot;                
+## [151] &quot;winter weather/mix&quot;        &quot;astronomical high tide&quot;   
+## [153] &quot;heavy surf/high surf&quot;      &quot;tropical depression&quot;      
+## [155] &quot;lake-effect snow&quot;          &quot;marine high wind&quot;         
+## [157] &quot;tsunami&quot;                   &quot;storm surge/tide&quot;         
+## [159] &quot;cold/wind chill&quot;           &quot;lakeshore flood&quot;          
+## [161] &quot;marine strong wind&quot;        &quot;astronomical low tide&quot;    
+## [163] &quot;dense smoke&quot;               &quot;marine hail&quot;              
+## [165] &quot;freezing fog&quot;
+</code></pre>
 
 <p>questions: what event types are worst for population health
 panel plot fatalities vs magnitude, colour = evtype
