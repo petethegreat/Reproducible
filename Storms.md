@@ -217,30 +217,6 @@ based on [this post](https://www.coursera.org/learn/reproducible-research/discus
 
 ```r
 library(dplyr)
-```
-
-```
-## Warning: package 'dplyr' was built under R version 3.1.3
-```
-
-```
-## 
-## Attaching package: 'dplyr'
-```
-
-```
-## The following objects are masked from 'package:stats':
-## 
-##     filter, lag
-```
-
-```
-## The following objects are masked from 'package:base':
-## 
-##     intersect, setdiff, setequal, union
-```
-
-```r
 stormData$BGN_DATE<-as.Date(stormData$BGN_DATE,format='%m/%d/%Y')
 storm96<-stormData %>% filter(BGN_DATE >  '1996-01-01')
 ```
@@ -318,6 +294,11 @@ storm96$PropDamage[thelist]<-storm96$PropDamage[thelist]*1.0e3
 # slim data based on injuries, fatalities, and property/crop damage
 slim96<- storm96 %>% select(BGN_DATE,EVTYPE,PropDamage,CropDamage,INJURIES,FATALITIES,LATITUDE,LONGITUDE) %>%
 filter(PropDamage>0 | CropDamage >0 | INJURIES >0 | FATALITIES >0)
+length(unique(slim96$EVTYPE))
+```
+
+```
+## [1] 222
 ```
 
 
@@ -326,14 +307,9 @@ Right now there are 222 event types. Start by casting everything to lower case, 
 
 ```r
 slim96$EventType<-tolower(slim96$EVTYPE)
-# trimws is new? 
+# trimws is new? doesn't exist in older R versions
 #slim96$EventType<-trimws(slim96$EventType)
 slim96$EventType<-gsub('^\\s+|\\s+$','',slim96$EventType)
-```
-
-reclassify 'non tstm wind' or similar as 'strong wind'
-
-```r
 length(unique(slim96$EventType))
 ```
 
@@ -341,25 +317,31 @@ length(unique(slim96$EventType))
 ## [1] 183
 ```
 
+Start Reclassifying things/filtering things
+
 ```r
+# remove things that can't be reclassified easily
+badcodes<-c("astronomical high tide","other","marine accident", "coastal storm","coastalstorm","beach erosion","glaze","mixed precip","freezing spray","dam break","coastal erosion" )
+slim96<- slim96 %>% filter(! (EventType  %in% badcodes))
+
+# change non thunderstorm winds to strong winds
 slim96$EventType<-gsub('non[ -]tstm wind','strong wind',slim96$EventType)
 length(unique(slim96$EventType))
 ```
 
 ```
-## [1] 181
+## [1] 170
 ```
 
-change tstm/thunderstorm wind to thunderstorm wind
-
 ```r
+#change tstm/thunderstorm wind to thunderstorm wind
 change<-with(slim96, (grepl('tstm',EventType) | grepl('thunderstorm',EventType)) & grepl('wind',EventType))
 slim96$EventType[change]<-'thunderstorm wind'
 length(unique(slim96$EventType))
 ```
 
 ```
-## [1] 167
+## [1] 156
 ```
 
 ```r
@@ -369,20 +351,138 @@ length(unique(slim96$EventType))
 ```
 
 ```
-## [1] 167
+## [1] 156
 ```
 
 ```r
 #change mudslide or similar to debris flow
-slim96$EventType<-gsub('mud\\s?slides?','debris flow',slim96$EventType)
+slim96$EventType<-gsub('mud[\\s|-]?slides?','debris flow',slim96$EventType)
 length(unique(slim96$EventType))
 ```
 
 ```
-## [1] 165
+## [1] 155
 ```
 
 ```r
+# freezing rain -> "frost/freeze" 
+# extreme cold -> "extreme cold/wind chill"
+# rip currents -> "rip current"
+# "wild/forest fire" -> "wildfire"
+# "storm surge" -> "Storm Surge/Tide"
+# "ice jam flood (minor" -> "flood"
+# "urban/sml stream fld" -> "flood"
+# "fog" -> "dense fog"
+# "rough surf"-> "high surf"
+# "heavy surf"->"high surf"
+# "freze" -> "frost/freeze"
+# "dry microburst"->"thunderstorm wind"
+# "winds"->"high wind"
+# "erosion/cstl flood"->"coastal flood"
+# "river flooding" ->"flood"
+# "damaging freeze"->"frost/freeze"
+# "heavy rain/high surf"->"heavy rain"
+# "unseasonable cold"->"cold/wind chill"
+# "early frost"->"frost/freeze"
+# "coastal flooding" ->"coastal flood"
+# "torrential rainfall"->"heavy rain"
+# "landslump"->"debris flow"
+# "hurricane edouard"->"hurricane"
+# "tidal flooding"->"coastal flood"
+# "strong winds" -> "strong wind"
+# "extreme windchill"->"extreme cold/wind chill"
+# "extended cold" -> "cold/wind chill"
+# "wintry mix" -> "winter weather"
+# "whirlwind" -> "dust devil"
+# "heavy snow shower" -> "heavy snow"
+# "cold"->"cold/windchill"
+# "downburst"->"thunderstorm wind"
+# "microburst" -> "thunderstorm wind"
+# "snow"->"heavy snow"
+# "snow squalls"->"heavy snow"
+# "wind damage"->"high wind"
+# "freezing drizzle"->"sleet"
+# "gusty wind/rain"->"strong wind"
+# "gusty wind/hvy rain"->"heavy rain"
+# "wind"->"strong wind"
+# "cold temperature"->"cold/wind chill"
+# "heat wave"->"heat"
+# "cold and snow"->"cold/wind chill"
+# "rain/snow"->"heavy rain"
+# "gusty winds"->"strong wind"
+# "gusty wind"->"strong wind"
+# "hard freeze"->"frost/freeze"
+# "river flood"->"flood"
+# "snow and ice"->"heavy snow"
+# "agricultural freeze"->"frost/freeze"
+# "snow squall"->"heavy snow"
+# "icy roads"->"frost/freeze"
+# "thunderstorm"->"thunderstorm wind"
+# "hypothermia/exposure"->"cold/wind chill"
+# "lake effect snow"->"lake-effect snow"
+# "mixed precipitation"->"winter weather"
+# "black ice"->"frost/freeze"
+# "light snowfall"->"winter weather"
+# "light snow"->"winter weather"
+# "blowing snow"->"winter weather"
+# "frost"->"frost/freeze"
+# "gradient wind"->"high wind"
+# "unseasonably cold"->"cold/wind chill"
+# "wet microburst"->"thunderstorm wind"
+# "heavy surf and wind"->"high surf"
+# "typhoon"->"hurricane (typhoon)"
+# "landslides"->"debris flow"                
+# "high swells"->"high surf"              
+# "high winds"->"high wind"                
+# "small hail"->"hail"               
+# "unseasonal rain"->"heavy rain"                           
+# "coastal flooding/erosion"->"coastal flood" 
+# "high wind (g40)"->"high wind"                                   
+# "unseasonably warm"->"heat"                         
+# "coastal  flooding/erosion"->"coastal flood"                 
+# "hyperthermia/exposure"->"cold/wind chill"    
+# "rock slide"->"debris flow"                                
+# "gusty wind/hail"->"hail"          
+# "heavy seas"->"high surf"                                
+# "landspout"->"funnel cloud"                
+# "record heat"->"excessive heat"                               
+# "excessive snow"->"heavy snow"           
+# "flood/flash/flood"->"flash flood"                         
+# "wind and wave"->"high surf"            
+# "flash flood/flood"->"flash flood"                         
+# "light freezing rain"->"frost/freeze"      
+# "ice roads"->"frost/freeze"                                 
+# "high seas"->"high surf"                
+# "rain"->"heavy rain"                                      
+# "rough seas"->"high surf"               
+# "non-severe wind damage"->"strong wind"                    
+# "warm weather"->"heat"             
+# "landslide"->"debris flow"                                 
+# "high water"->"flood"               
+# "late season snow"->"heavy snow"                          
+# "winter weather mix"->"winter weather"       
+# "rogue wave"->"high surf"                                
+# "falling snow/ice"->"winter weather"          
+# "brush fire"->"wildfire"                                
+# "blowing dust"->"dust devil"             
+# "volcanic ash"                              
+# "high surf advisory"->"high surf"       
+# "hazardous surf"->"high surf"                            
+# "cold weather"->"cold/wind chill"                              
+# "ice on road"->"frost/freeze"              
+# "drowning"->"rip current"                                  
+# "hurricane/typhoon"->"hurricane (typhoon)"                         
+# "winter weather/mix"->"winter weather"                        
+# "heavy surf/high surf"->"high surf"                      
+
+# copy paste the above into a text file, do some sed/awk to remove the leading #'s and the ->, then sort by destination code
+# see if we can deal with an entire group at a time by regex
+
+# maybe make a list of the allowed groups, and have R do a unique(filter by EventType not in allowed)
+
+
+
+
 unique(slim96$EventType)
 ```
 
@@ -393,83 +493,78 @@ unique(slim96$EventType)
 ##   [7] "extreme cold"              "lightning"                
 ##   [9] "hail"                      "flood"                    
 ##  [11] "excessive heat"            "rip currents"             
-##  [13] "other"                     "heavy snow"               
-##  [15] "wild/forest fire"          "ice storm"                
-##  [17] "blizzard"                  "storm surge"              
-##  [19] "ice jam flood (minor"      "dust storm"               
-##  [21] "strong wind"               "dust devil"               
-##  [23] "urban/sml stream fld"      "fog"                      
-##  [25] "rough surf"                "heavy surf"               
-##  [27] "heavy rain"                "marine accident"          
-##  [29] "avalanche"                 "freeze"                   
-##  [31] "dry microburst"            "winds"                    
-##  [33] "coastal storm"             "erosion/cstl flood"       
-##  [35] "river flooding"            "waterspout"               
-##  [37] "damaging freeze"           "hurricane"                
-##  [39] "tropical storm"            "beach erosion"            
-##  [41] "high surf"                 "heavy rain/high surf"     
-##  [43] "unseasonable cold"         "early frost"              
-##  [45] "wintry mix"                "drought"                  
-##  [47] "coastal flooding"          "torrential rainfall"      
-##  [49] "landslump"                 "hurricane edouard"        
-##  [51] "tidal flooding"            "strong winds"             
-##  [53] "extreme windchill"         "glaze"                    
-##  [55] "extended cold"             "whirlwind"                
-##  [57] "heavy snow shower"         "light snow"               
-##  [59] "coastal flood"             "mixed precip"             
-##  [61] "cold"                      "freezing spray"           
-##  [63] "downburst"                 "debris flow"              
-##  [65] "microburst"                "snow"                     
-##  [67] "snow squalls"              "wind damage"              
-##  [69] "light snowfall"            "freezing drizzle"         
-##  [71] "gusty wind/rain"           "gusty wind/hvy rain"      
-##  [73] "wind"                      "cold temperature"         
-##  [75] "heat wave"                 "cold and snow"            
-##  [77] "rain/snow"                 "gusty winds"              
-##  [79] "gusty wind"                "hard freeze"              
-##  [81] "heat"                      "river flood"              
-##  [83] "rip current"               "frost/freeze"             
-##  [85] "snow and ice"              "agricultural freeze"      
-##  [87] "winter weather"            "snow squall"              
-##  [89] "icy roads"                 "thunderstorm"             
-##  [91] "hypothermia/exposure"      "lake effect snow"         
-##  [93] "mixed precipitation"       "black ice"                
-##  [95] "coastalstorm"              "dam break"                
-##  [97] "blowing snow"              "frost"                    
-##  [99] "gradient wind"             "unseasonably cold"        
-## [101] "wet microburst"            "heavy surf and wind"      
-## [103] "funnel cloud"              "typhoon"                  
-## [105] "landslides"                "high swells"              
-## [107] "high winds"                "small hail"               
-## [109] "unseasonal rain"           "coastal flooding/erosion" 
-## [111] "high wind (g40)"           "coastal erosion"          
-## [113] "unseasonably warm"         "seiche"                   
-## [115] "coastal  flooding/erosion" "hyperthermia/exposure"    
-## [117] "rock slide"                "gusty wind/hail"          
-## [119] "heavy seas"                "landspout"                
-## [121] "record heat"               "excessive snow"           
-## [123] "flood/flash/flood"         "wind and wave"            
-## [125] "flash flood/flood"         "light freezing rain"      
-## [127] "ice roads"                 "high seas"                
-## [129] "rain"                      "rough seas"               
-## [131] "non-severe wind damage"    "warm weather"             
-## [133] "landslide"                 "high water"               
-## [135] "late season snow"          "winter weather mix"       
-## [137] "rogue wave"                "falling snow/ice"         
-## [139] "brush fire"                "blowing dust"             
-## [141] "volcanic ash"              "high surf advisory"       
-## [143] "hazardous surf"            "wildfire"                 
-## [145] "cold weather"              "ice on road"              
-## [147] "drowning"                  "extreme cold/wind chill"  
-## [149] "hurricane/typhoon"         "dense fog"                
-## [151] "winter weather/mix"        "astronomical high tide"   
-## [153] "heavy surf/high surf"      "tropical depression"      
-## [155] "lake-effect snow"          "marine high wind"         
-## [157] "tsunami"                   "storm surge/tide"         
-## [159] "cold/wind chill"           "lakeshore flood"          
-## [161] "marine strong wind"        "astronomical low tide"    
-## [163] "dense smoke"               "marine hail"              
-## [165] "freezing fog"
+##  [13] "heavy snow"                "wild/forest fire"         
+##  [15] "ice storm"                 "blizzard"                 
+##  [17] "storm surge"               "ice jam flood (minor"     
+##  [19] "dust storm"                "strong wind"              
+##  [21] "dust devil"                "urban/sml stream fld"     
+##  [23] "fog"                       "rough surf"               
+##  [25] "heavy surf"                "heavy rain"               
+##  [27] "avalanche"                 "freeze"                   
+##  [29] "dry microburst"            "winds"                    
+##  [31] "erosion/cstl flood"        "river flooding"           
+##  [33] "waterspout"                "damaging freeze"          
+##  [35] "hurricane"                 "tropical storm"           
+##  [37] "high surf"                 "heavy rain/high surf"     
+##  [39] "unseasonable cold"         "early frost"              
+##  [41] "wintry mix"                "drought"                  
+##  [43] "coastal flooding"          "torrential rainfall"      
+##  [45] "landslump"                 "hurricane edouard"        
+##  [47] "tidal flooding"            "strong winds"             
+##  [49] "extreme windchill"         "extended cold"            
+##  [51] "whirlwind"                 "heavy snow shower"        
+##  [53] "light snow"                "coastal flood"            
+##  [55] "cold"                      "downburst"                
+##  [57] "debris flow"               "microburst"               
+##  [59] "snow"                      "snow squalls"             
+##  [61] "wind damage"               "light snowfall"           
+##  [63] "freezing drizzle"          "gusty wind/rain"          
+##  [65] "gusty wind/hvy rain"       "wind"                     
+##  [67] "cold temperature"          "heat wave"                
+##  [69] "cold and snow"             "rain/snow"                
+##  [71] "gusty winds"               "gusty wind"               
+##  [73] "hard freeze"               "heat"                     
+##  [75] "river flood"               "rip current"              
+##  [77] "mud slide"                 "frost/freeze"             
+##  [79] "snow and ice"              "agricultural freeze"      
+##  [81] "winter weather"            "snow squall"              
+##  [83] "icy roads"                 "thunderstorm"             
+##  [85] "hypothermia/exposure"      "lake effect snow"         
+##  [87] "mixed precipitation"       "black ice"                
+##  [89] "blowing snow"              "frost"                    
+##  [91] "gradient wind"             "unseasonably cold"        
+##  [93] "wet microburst"            "heavy surf and wind"      
+##  [95] "funnel cloud"              "typhoon"                  
+##  [97] "landslides"                "high swells"              
+##  [99] "high winds"                "small hail"               
+## [101] "unseasonal rain"           "coastal flooding/erosion" 
+## [103] "high wind (g40)"           "unseasonably warm"        
+## [105] "seiche"                    "coastal  flooding/erosion"
+## [107] "hyperthermia/exposure"     "rock slide"               
+## [109] "gusty wind/hail"           "heavy seas"               
+## [111] "landspout"                 "record heat"              
+## [113] "excessive snow"            "flood/flash/flood"        
+## [115] "wind and wave"             "flash flood/flood"        
+## [117] "light freezing rain"       "ice roads"                
+## [119] "high seas"                 "rain"                     
+## [121] "rough seas"                "non-severe wind damage"   
+## [123] "warm weather"              "landslide"                
+## [125] "high water"                "late season snow"         
+## [127] "winter weather mix"        "rogue wave"               
+## [129] "falling snow/ice"          "brush fire"               
+## [131] "blowing dust"              "volcanic ash"             
+## [133] "high surf advisory"        "hazardous surf"           
+## [135] "wildfire"                  "cold weather"             
+## [137] "ice on road"               "drowning"                 
+## [139] "extreme cold/wind chill"   "hurricane/typhoon"        
+## [141] "dense fog"                 "winter weather/mix"       
+## [143] "heavy surf/high surf"      "tropical depression"      
+## [145] "lake-effect snow"          "marine high wind"         
+## [147] "tsunami"                   "storm surge/tide"         
+## [149] "cold/wind chill"           "lakeshore flood"          
+## [151] "marine strong wind"        "astronomical low tide"    
+## [153] "dense smoke"               "marine hail"              
+## [155] "freezing fog"
 ```
 
 

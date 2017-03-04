@@ -181,6 +181,7 @@ storm96$PropDamage[thelist]<-storm96$PropDamage[thelist]*1.0e3
 # slim data based on injuries, fatalities, and property/crop damage
 slim96<- storm96 %>% select(BGN_DATE,EVTYPE,PropDamage,CropDamage,INJURIES,FATALITIES,LATITUDE,LONGITUDE) %>%
 filter(PropDamage>0 | CropDamage >0 | INJURIES >0 | FATALITIES >0)
+length(unique(slim96$EVTYPE))
 
 ```
 
@@ -189,21 +190,24 @@ Right now there are 222 event types. Start by casting everything to lower case, 
 
 ```{r evntCasting1}
 slim96$EventType<-tolower(slim96$EVTYPE)
-# trimws is new? 
+# trimws is new? doesn't exist in older R versions
 #slim96$EventType<-trimws(slim96$EventType)
 slim96$EventType<-gsub('^\\s+|\\s+$','',slim96$EventType)
+length(unique(slim96$EventType))
 ```
 
-reclassify 'non tstm wind' or similar as 'strong wind'
-```{r NonTstmToStrong, cache=TRUE}
-length(unique(slim96$EventType))
+Start Reclassifying things/filtering things
+```{r cleaning, cache=TRUE}
+
+# remove things that can't be reclassified easily
+badcodes<-c("astronomical high tide","other","marine accident", "coastal storm","coastalstorm","beach erosion","glaze","mixed precip","freezing spray","dam break","coastal erosion" )
+slim96<- slim96 %>% filter(! (EventType  %in% badcodes))
+
+# change non thunderstorm winds to strong winds
 slim96$EventType<-gsub('non[ -]tstm wind','strong wind',slim96$EventType)
 length(unique(slim96$EventType))
-```
 
-change tstm/thunderstorm wind to thunderstorm wind
-```{r tstmwind,cache=TRUE}
-
+#change tstm/thunderstorm wind to thunderstorm wind
 change<-with(slim96, (grepl('tstm',EventType) | grepl('thunderstorm',EventType)) & grepl('wind',EventType))
 slim96$EventType[change]<-'thunderstorm wind'
 length(unique(slim96$EventType))
@@ -212,14 +216,17 @@ length(unique(slim96$EventType))
 slim96['EventType'=='blowing dust','EventType']<-'dust devil'
 length(unique(slim96$EventType))
 
-
 #change mudslide or similar to debris flow
 slim96$EventType<-gsub('mud[\\s|-]?slides?','debris flow',slim96$EventType)
 length(unique(slim96$EventType))
 
-# remove things that can't be reclassified easily
-badcodes<-c("astronomical high tide","other","marine accident", "coastal storm","coastalstorm","beach erosion","glaze","mixed precip","freezing spray","dam break","coastal erosion" )
-slim96<- slim96 %>% filter(! (EventType  %in% badcodes))
+# change any remaining occurences of "coastal" to coastal flooding
+slim96 %>% filter(grepl('coastal|tidal|cstl',EventType)) %>% mutate(EventType= 'coastal flooding')
+length(unique(slim96$EventType))
+
+# change (non extreme) cold to cold/windchill
+slim96 %>% filter(grepl('cold|thermia',EventType) & (! grepl('extreme',EventType)) ) %>% mutate(EventType = 'cold/wind chill')
+length(unique(slim96$EventType))
 
 # freezing rain -> "frost/freeze" 
 # extreme cold -> "extreme cold/wind chill"
