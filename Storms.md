@@ -113,101 +113,54 @@ sum(grepl('thunderstorm',moose))
 
 There are 87 event types that differ only in the case (upper or lower) of their lettering, 'avalanche' is missspelled at least once, and high winds may be categorised as something like 'tstm wind' or 'thunderstorm wind', with variations based on wind speeds/gust speeds. All of these variations make it difficult to compare weather events. According to the [instructions](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf) on storm data preparation, there are only 48 allowed event types, which are listed below: 
 
--Astronomical Low Tide 
-
--Avalanche 
-
--Blizzard 
-
--Coastal Flood 
-
--Cold/Wind Chill 
-
--Debris Flow 
-
--Dense Fog 
-
--Dense Smoke 
-
--Drought 
-
--Dust Devil 
-
--Dust Storm 
-
--Excessive Heat 
-
--Extreme Cold/Wind Chill 
-
--Flash Flood 
-
--Flood 
-
--Frost/Freeze 
-
--Funnel Cloud 
-
--Freezing Fog 
-
--Hail 
-
--Heat 
-
--Heavy Rain 
-
--Heavy Snow 
-
--High Surf 
-
--High Wind 
-
--Hurricane (Typhoon)
-
--Ice Storm 
-
--Lake-Effect Snow 
-
--Lakeshore Flood 
-
--Lightning 
-
--Marine Hail 
-
--Marine High Wind 
-
--Marine Strong Wind 
-
--Marine Thunderstorm Wind 
-
--Rip Current 
-
--Seiche 
-
--Sleet 
-
--Storm Surge/Tide 
-
--Strong Wind 
-
--Thunderstorm Wind 
-
--Tornado 
-
--Tropical Depression 
-
--Tropical Storm 
-
--Tsunami 
-
--Volcanic Ash 
-
--Waterspout 
-
--Wildfire 
-
--Winter Storm 
-
--Winter Weather
+- Astronomical Low Tide 
+- Avalanche 
+- Blizzard 
+- Coastal Flood 
+- Cold/Wind Chill 
+- Debris Flow 
+- Dense Fog 
+- Dense Smoke 
+- Drought 
+- Dust Devil 
+- Dust Storm 
+- Excessive Heat 
+- Extreme Cold/Wind Chill 
+- Flash Flood 
+- Flood 
+- Frost/Freeze 
+- Funnel Cloud 
+- Freezing Fog 
+- Hail 
+- Heat 
+- Heavy Rain 
+- Heavy Snow 
+- High Surf 
+- High Wind 
+- Hurricane (Typhoon)
+- Ice Storm 
+- Lake-Effect Snow 
+- Lakeshore Flood 
+- Lightning 
+- Marine Hail 
+- Marine High Wind 
+- Marine Strong Wind 
+- Marine Thunderstorm Wind 
+- Rip Current 
+- Seiche 
+- Sleet 
+- Storm Surge/Tide 
+- Strong Wind 
+- Thunderstorm Wind 
+- Tornado 
+- Tropical Depression 
+- Tropical Storm 
+- Tsunami 
+- Volcanic Ash 
+- Waterspout 
+- Wildfire 
+- Winter Storm 
+- Winter Weather
 
 
 The raw data will need to be tidied before it can be processed effectively. First the observations (rows) of interest will be selected (as this will limit the range of EVTYPE codes that need to be corrected), and then regular expressions will be used to correct the event type codes to one of the 48 options listed above.
@@ -225,56 +178,48 @@ Crop and property damage are stored strangely, with the first few significant di
 
 ```r
 storm96$CropDamage<-storm96$CROPDMG
-levels(storm96$CROPDMGEXP) 
+class(storm96$CROPDMGEXP)
 ```
 
 ```
-## NULL
-```
-
-```r
-sum(storm96$CROPDMGEXP == '2')
-```
-
-```
-## [1] 0
+## [1] "character"
 ```
 
 ```r
-sum(storm96$CROPDMGEXP == '0')
+levels(as.factor(storm96$CROPDMGEXP) )
 ```
 
 ```
-## [1] 0
-```
-
-```r
-sum(storm96$CROPDMGEXP == '')
-```
-
-```
-## [1] 373047
-```
-
-```r
-max(storm96$CROPDMG[storm96$CROPDMGEXP == ''])
-```
-
-```
-## [1] 0
+## [1] ""  "B" "K" "M"
 ```
 
 ```r
 # scale crop damage
 thelist<-with(storm96, CROPDMGEXP=='B')
 storm96$CropDamage[thelist]<-storm96$CropDamage[thelist]*1.0e9
-thelist<-with(storm96, CROPDMGEXP=='K' | CROPDMGEXP=='k')
+thelist<-with(storm96, CROPDMGEXP=='K' )
 storm96$CropDamage[thelist]<-storm96$CropDamage[thelist]*1.0e3
-thelist<-with(storm96, CROPDMGEXP=='M' | CROPDMGEXP=='m')
+thelist<-with(storm96, CROPDMGEXP=='M')
 storm96$CropDamage[thelist]<-storm96$CropDamage[thelist]*1.0e6
 
 # scale property damage
 storm96$PropDamage<-storm96$PROPDMG
+class(storm96$PROPDMGEXP)
+```
+
+```
+## [1] "character"
+```
+
+```r
+levels(as.factor(storm96$PROPDMGEXP) )
+```
+
+```
+## [1] ""  "0" "B" "K" "M"
+```
+
+```r
 thelist<-grepl('[1-8]',storm96$PROPDMGEXP)
 sum(thelist)
 ```
@@ -321,7 +266,7 @@ Start Reclassifying things/filtering things
 
 ```r
 # remove things that can't be reclassified easily
-badcodes<-c("astronomical high tide","other","marine accident", "coastal storm","coastalstorm","beach erosion","glaze","mixed precip","freezing spray","dam break","coastal erosion" )
+badcodes<-c("astronomical high tide","other","marine accident", "coastal storm","coastalstorm","beach erosion","glaze","mixed precip","dam break","coastal erosion" )
 slim96<- slim96 %>% filter(! (EventType  %in% badcodes))
 
 # change non thunderstorm winds to strong winds
@@ -330,7 +275,7 @@ length(unique(slim96$EventType))
 ```
 
 ```
-## [1] 170
+## [1] 171
 ```
 
 ```r
@@ -341,12 +286,12 @@ length(unique(slim96$EventType))
 ```
 
 ```
-## [1] 156
+## [1] 157
 ```
 
 ```r
 # change 'blowing dust' to dust devil
-slim96['EventType'=='blowing dust','EventType']<-'dust devil'
+slim96[slim96$EventType=='blowing dust','EventType']<-'dust devil'
 length(unique(slim96$EventType))
 ```
 
@@ -356,217 +301,148 @@ length(unique(slim96$EventType))
 
 ```r
 #change mudslide or similar to debris flow
-slim96$EventType<-gsub('mud[\\s|-]?slides?','debris flow',slim96$EventType)
+slim96$EventType<-gsub('mud[ -]?slides?','debris flow',slim96$EventType)
 length(unique(slim96$EventType))
 ```
 
 ```
-## [1] 155
+## [1] 154
 ```
 
 ```r
-# freezing rain -> "frost/freeze" 
-# extreme cold -> "extreme cold/wind chill"
-# rip currents -> "rip current"
-# "wild/forest fire" -> "wildfire"
-# "storm surge" -> "Storm Surge/Tide"
-# "ice jam flood (minor" -> "flood"
-# "urban/sml stream fld" -> "flood"
-# "fog" -> "dense fog"
-# "rough surf"-> "high surf"
-# "heavy surf"->"high surf"
-# "freze" -> "frost/freeze"
-# "dry microburst"->"thunderstorm wind"
-# "winds"->"high wind"
-# "erosion/cstl flood"->"coastal flood"
-# "river flooding" ->"flood"
-# "damaging freeze"->"frost/freeze"
-# "heavy rain/high surf"->"heavy rain"
-# "unseasonable cold"->"cold/wind chill"
-# "early frost"->"frost/freeze"
-# "coastal flooding" ->"coastal flood"
-# "torrential rainfall"->"heavy rain"
-# "landslump"->"debris flow"
-# "hurricane edouard"->"hurricane"
-# "tidal flooding"->"coastal flood"
-# "strong winds" -> "strong wind"
-# "extreme windchill"->"extreme cold/wind chill"
-# "extended cold" -> "cold/wind chill"
-# "wintry mix" -> "winter weather"
-# "whirlwind" -> "dust devil"
-# "heavy snow shower" -> "heavy snow"
-# "cold"->"cold/windchill"
-# "downburst"->"thunderstorm wind"
-# "microburst" -> "thunderstorm wind"
-# "snow"->"heavy snow"
-# "snow squalls"->"heavy snow"
-# "wind damage"->"high wind"
-# "freezing drizzle"->"sleet"
-# "gusty wind/rain"->"strong wind"
-# "gusty wind/hvy rain"->"heavy rain"
-# "wind"->"strong wind"
-# "cold temperature"->"cold/wind chill"
-# "heat wave"->"heat"
-# "cold and snow"->"cold/wind chill"
-# "rain/snow"->"heavy rain"
-# "gusty winds"->"strong wind"
-# "gusty wind"->"strong wind"
-# "hard freeze"->"frost/freeze"
-# "river flood"->"flood"
-# "snow and ice"->"heavy snow"
-# "agricultural freeze"->"frost/freeze"
-# "snow squall"->"heavy snow"
-# "icy roads"->"frost/freeze"
-# "thunderstorm"->"thunderstorm wind"
-# "hypothermia/exposure"->"cold/wind chill"
-# "lake effect snow"->"lake-effect snow"
-# "mixed precipitation"->"winter weather"
-# "black ice"->"frost/freeze"
-# "light snowfall"->"winter weather"
-# "light snow"->"winter weather"
-# "blowing snow"->"winter weather"
-# "frost"->"frost/freeze"
-# "gradient wind"->"high wind"
-# "unseasonably cold"->"cold/wind chill"
-# "wet microburst"->"thunderstorm wind"
-# "heavy surf and wind"->"high surf"
-# "typhoon"->"hurricane (typhoon)"
-# "landslides"->"debris flow"                
-# "high swells"->"high surf"              
-# "high winds"->"high wind"                
-# "small hail"->"hail"               
-# "unseasonal rain"->"heavy rain"                           
-# "coastal flooding/erosion"->"coastal flood" 
-# "high wind (g40)"->"high wind"                                   
-# "unseasonably warm"->"heat"                         
-# "coastal  flooding/erosion"->"coastal flood"                 
-# "hyperthermia/exposure"->"cold/wind chill"    
-# "rock slide"->"debris flow"                                
-# "gusty wind/hail"->"hail"          
-# "heavy seas"->"high surf"                                
-# "landspout"->"funnel cloud"                
-# "record heat"->"excessive heat"                               
-# "excessive snow"->"heavy snow"           
-# "flood/flash/flood"->"flash flood"                         
-# "wind and wave"->"high surf"            
-# "flash flood/flood"->"flash flood"                         
-# "light freezing rain"->"frost/freeze"      
-# "ice roads"->"frost/freeze"                                 
-# "high seas"->"high surf"                
-# "rain"->"heavy rain"                                      
-# "rough seas"->"high surf"               
-# "non-severe wind damage"->"strong wind"                    
-# "warm weather"->"heat"             
-# "landslide"->"debris flow"                                 
-# "high water"->"flood"               
-# "late season snow"->"heavy snow"                          
-# "winter weather mix"->"winter weather"       
-# "rogue wave"->"high surf"                                
-# "falling snow/ice"->"winter weather"          
-# "brush fire"->"wildfire"                                
-# "blowing dust"->"dust devil"             
-# "volcanic ash"                              
-# "high surf advisory"->"high surf"       
-# "hazardous surf"->"high surf"                            
-# "cold weather"->"cold/wind chill"                              
-# "ice on road"->"frost/freeze"              
-# "drowning"->"rip current"                                  
-# "hurricane/typhoon"->"hurricane (typhoon)"                         
-# "winter weather/mix"->"winter weather"                        
-# "heavy surf/high surf"->"high surf"                      
-
-# copy paste the above into a text file, do some sed/awk to remove the leading #'s and the ->, then sort by destination code
-# see if we can deal with an entire group at a time by regex
-
-# maybe make a list of the allowed groups, and have R do a unique(filter by EventType not in allowed)
-
-
-
-
-unique(slim96$EventType)
+# change any remaining occurences of "coastal" to coastal flood
+slim96[grepl('coastal|tidal|cstl',slim96$EventType),'EventType'] <-'coastal flood'
+length(unique(slim96$EventType))
 ```
 
 ```
-##   [1] "winter storm"              "tornado"                  
-##   [3] "thunderstorm wind"         "high wind"                
-##   [5] "flash flood"               "freezing rain"            
-##   [7] "extreme cold"              "lightning"                
-##   [9] "hail"                      "flood"                    
-##  [11] "excessive heat"            "rip currents"             
-##  [13] "heavy snow"                "wild/forest fire"         
-##  [15] "ice storm"                 "blizzard"                 
-##  [17] "storm surge"               "ice jam flood (minor"     
-##  [19] "dust storm"                "strong wind"              
-##  [21] "dust devil"                "urban/sml stream fld"     
-##  [23] "fog"                       "rough surf"               
-##  [25] "heavy surf"                "heavy rain"               
-##  [27] "avalanche"                 "freeze"                   
-##  [29] "dry microburst"            "winds"                    
-##  [31] "erosion/cstl flood"        "river flooding"           
-##  [33] "waterspout"                "damaging freeze"          
-##  [35] "hurricane"                 "tropical storm"           
-##  [37] "high surf"                 "heavy rain/high surf"     
-##  [39] "unseasonable cold"         "early frost"              
-##  [41] "wintry mix"                "drought"                  
-##  [43] "coastal flooding"          "torrential rainfall"      
-##  [45] "landslump"                 "hurricane edouard"        
-##  [47] "tidal flooding"            "strong winds"             
-##  [49] "extreme windchill"         "extended cold"            
-##  [51] "whirlwind"                 "heavy snow shower"        
-##  [53] "light snow"                "coastal flood"            
-##  [55] "cold"                      "downburst"                
-##  [57] "debris flow"               "microburst"               
-##  [59] "snow"                      "snow squalls"             
-##  [61] "wind damage"               "light snowfall"           
-##  [63] "freezing drizzle"          "gusty wind/rain"          
-##  [65] "gusty wind/hvy rain"       "wind"                     
-##  [67] "cold temperature"          "heat wave"                
-##  [69] "cold and snow"             "rain/snow"                
-##  [71] "gusty winds"               "gusty wind"               
-##  [73] "hard freeze"               "heat"                     
-##  [75] "river flood"               "rip current"              
-##  [77] "mud slide"                 "frost/freeze"             
-##  [79] "snow and ice"              "agricultural freeze"      
-##  [81] "winter weather"            "snow squall"              
-##  [83] "icy roads"                 "thunderstorm"             
-##  [85] "hypothermia/exposure"      "lake effect snow"         
-##  [87] "mixed precipitation"       "black ice"                
-##  [89] "blowing snow"              "frost"                    
-##  [91] "gradient wind"             "unseasonably cold"        
-##  [93] "wet microburst"            "heavy surf and wind"      
-##  [95] "funnel cloud"              "typhoon"                  
-##  [97] "landslides"                "high swells"              
-##  [99] "high winds"                "small hail"               
-## [101] "unseasonal rain"           "coastal flooding/erosion" 
-## [103] "high wind (g40)"           "unseasonably warm"        
-## [105] "seiche"                    "coastal  flooding/erosion"
-## [107] "hyperthermia/exposure"     "rock slide"               
-## [109] "gusty wind/hail"           "heavy seas"               
-## [111] "landspout"                 "record heat"              
-## [113] "excessive snow"            "flood/flash/flood"        
-## [115] "wind and wave"             "flash flood/flood"        
-## [117] "light freezing rain"       "ice roads"                
-## [119] "high seas"                 "rain"                     
-## [121] "rough seas"                "non-severe wind damage"   
-## [123] "warm weather"              "landslide"                
-## [125] "high water"                "late season snow"         
-## [127] "winter weather mix"        "rogue wave"               
-## [129] "falling snow/ice"          "brush fire"               
-## [131] "blowing dust"              "volcanic ash"             
-## [133] "high surf advisory"        "hazardous surf"           
-## [135] "wildfire"                  "cold weather"             
-## [137] "ice on road"               "drowning"                 
-## [139] "extreme cold/wind chill"   "hurricane/typhoon"        
-## [141] "dense fog"                 "winter weather/mix"       
-## [143] "heavy surf/high surf"      "tropical depression"      
-## [145] "lake-effect snow"          "marine high wind"         
-## [147] "tsunami"                   "storm surge/tide"         
-## [149] "cold/wind chill"           "lakeshore flood"          
-## [151] "marine strong wind"        "astronomical low tide"    
-## [153] "dense smoke"               "marine hail"              
-## [155] "freezing fog"
+## [1] 149
 ```
 
+```r
+# change (non extreme) cold to cold/windchill
+slim96[grepl('cold|thermia',slim96$EventType) & (! grepl('extreme',slim96$EventType)),'EventType'] <-'cold/wind chill'
+
+# extreme cold
+slim96$EventType[grepl('extreme',slim96$EventType)] <-'extreme cold/wind chill'
+
+# land or rock slides to debris flow
+slim96$EventType[grepl('landsl|rock',slim96$EventType)] <-'debris flow'
+
+# fog to dense fog
+slim96[grepl('fog',slim96$EventType),'EventType'] <-'dense fog'
+
+# blowing dust or whirlwind to dust devil
+slim96$EventType[grepl('whirl|dust',slim96$EventType)]<-'dust devil'
+
+length(unique(slim96$EventType))
+```
+
+```
+## [1] 130
+```
+
+```r
+# record heat to excessive heat
+slim96$EventType[grepl('record heat',slim96$EventType)]<-"excessive heat"
+
+# flash floods
+slim96$EventType[grepl('flash',slim96$EventType)]<-"flash flood"
+
+# non flash floods
+slim96$EventType[grepl('high water|flood|fld',slim96$EventType) & (! grepl('flash|coastal',slim96$EventType))]<-"flood"
+
+# frost/freeze
+slim96$EventType[grepl('agric|black|road|free?z|frost',slim96$EventType) ]<-"frost/freeze"
+
+# "landspout"
+slim96$EventType[grepl('landspout',slim96$EventType)]<-"funnel cloud"
+
+# hail
+slim96$EventType[grepl('hail',slim96$EventType)]<-"hail"
+
+# excessive heat
+slim96$EventType[grepl('record',slim96$EventType)]<-"excessive heat"
+
+# regular heat
+slim96$EventType[grepl('heat|warm',slim96$EventType) & (! grepl('excessive',slim96$EventType))]<-"heat"
+
+# rain (not gusty or freezing)
+slim96$EventType[grepl('rain',slim96$EventType) & (! grepl('wind|freez',slim96$EventType))]<-"heavy rain"
+
+# lake effect snow
+slim96$EventType[grepl('lake effect snow',slim96$EventType)]<-"lake-effect snow"
+
+# winter weather
+slim96$EventType[grepl('blowing|falling|light|mix',slim96$EventType)]<-"winter weather"
+
+# heavy snow
+slim96$EventType[grepl('snow',slim96$EventType) & (! grepl('lake',slim96$EventType))]<-"heavy snow"
+
+# high surf
+slim96$EventType[grepl('surf|sea|wave|swell',slim96$EventType)]<-"high surf"
+
+# high wind
+slim96$EventType[grepl('grad|high wind',slim96$EventType)]<-"high wind"
+
+# strong wind
+slim96$EventType[grepl('gust|wind damage',slim96$EventType)]<-"strong wind"
+slim96$EventType[ slim96$EventType =='wind' ]<-'strong wind'
+slim96$EventType[ slim96$EventType=='winds']<-'strong wind'
+slim96$EventType[ slim96$EventType== 'strong winds']<-'strong wind'
+
+# hurricane (typhoon)
+slim96$EventType[grepl('hurricane|typhoon',slim96$EventType)]<-"hurricane (typhoon)"
+
+# rip currents (assume that drowning belongs here)
+slim96$EventType[grepl('rip current|drown',slim96$EventType)]<-"rip current"
+
+# storm surge
+slim96$EventType[grepl('storm surge',slim96$EventType)]<-"storm surge/tide"
+
+# thunderstorm winds - microbursts/downbursts are often associated with thunderstorms, so we include those here (wikipedia)
+slim96$EventType[grepl('burst',slim96$EventType)]<-'thunderstorm wind'
+slim96$EventType[ slim96$EventType== 'thunderstorm']<-'thunderstorm wind'
+
+# wildfire
+slim96$EventType[grepl('fire',slim96$EventType)]<-'wildfire'
+
+moose<-unique(slim96$EventType)
+moose[order(moose)]                  
+```
+
+```
+##  [1] "astronomical low tide"   "avalanche"              
+##  [3] "blizzard"                "coastal flood"          
+##  [5] "cold/wind chill"         "debris flow"            
+##  [7] "dense fog"               "dense smoke"            
+##  [9] "drought"                 "dust devil"             
+## [11] "excessive heat"          "extreme cold/wind chill"
+## [13] "flash flood"             "flood"                  
+## [15] "frost/freeze"            "funnel cloud"           
+## [17] "hail"                    "heat"                   
+## [19] "heavy rain"              "heavy snow"             
+## [21] "high surf"               "high wind"              
+## [23] "hurricane (typhoon)"     "ice storm"              
+## [25] "lake-effect snow"        "marine strong wind"     
+## [27] "rip current"             "seiche"                 
+## [29] "storm surge/tide"        "strong wind"            
+## [31] "thunderstorm wind"       "tornado"                
+## [33] "tropical depression"     "tropical storm"         
+## [35] "tsunami"                 "volcanic ash"           
+## [37] "waterspout"              "wildfire"               
+## [39] "winter storm"            "winter weather"
+```
+
+following event codes are absent from the data:
+ 1. dust storm
+ 2. freezing fog
+ 3. lakeshore flood
+ 4. lightning
+ 5. marine hail
+ 6. marine high wind
+ 7. marine thunderstorm wind
+ 8. sleet
 
 
 

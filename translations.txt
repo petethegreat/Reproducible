@@ -34,7 +34,7 @@
 # "snow"->"heavy snow"
 # "snow squalls"->"heavy snow"
 # "wind damage"->"high wind"
-# "freezing drizzle"->"sleet"
+# "freezing drizzle"->"frost/freeze"
 # "gusty wind/rain"->"strong wind"
 # "gusty wind/hvy rain"->"heavy rain"
 # "wind"->"strong wind"
@@ -107,3 +107,39 @@
 # "hurricane/typhoon"->"hurricane (typhoon)"                         
 # "winter weather/mix"->"winter weather"                        
 # "heavy surf/high surf"->"high surf"  
+
+
+
+
+## cat sorted_translations.txt | sed 's/\(\".*\"\) \(\".*\"\)/\1|\2/' | cut -d "|" -f1 | grep -E "agric|black|road|freeze"
+
+rep -E "agric|black|free?ze" sorted_translations.txt 
+
+
+
+
+##  [1] "astronomical low tide"   "avalanche"              
+##  [3] "blizzard"                "cold/wind chill"        
+##  [5] "debris flow"             "dense fog"              
+##  [7] "dense smoke"             "drought"                
+##  [9] "dust devil"              "extreme cold/wind chill"
+## [11] "flash flood"             "flood"                  
+## [13] "frost/freeze"            "funnel cloud"           
+## [15] "hail"                    "heat"                   
+## [17] "heavy rain"              "heavy snow"             
+## [19] "high surf"               "high wind"              
+## [21] "hurricane (typhoon)"     "ice storm"              
+## [23] "lake-effect snow"        "marine strong wind"     
+## [25] "mud slide"               "rip current"            
+## [27] "seiche"                  "storm surge/tide"       
+## [29] "strong wind"             "strong winds"           
+## [31] "thunderstorm"            "thunderstorm wind"      
+## [33] "tornado"                 "tropical depression"    
+## [35] "tropical storm"          "tsunami"                
+## [37] "volcanic ash"            "waterspout"             
+## [39] "wildfire"                "wind"                   
+## [41] "winds"                   "winter storm"           
+## [43] "winter weather"
+
+masked: excessive heat, coastal flood, lakeshore flood
+absent: freezing fog, dust storm, lakeshore flood, marine hail, marine high wind, marine strong wind
