@@ -29,7 +29,7 @@ head(stormData)
 ## Data Processing
 
 The Event type code (EVTYPE) is important, as it will be used to categorise the data. Unfortunately, there are many errors and inconsistencies in the raw data. For example:
-```{r evtNames, dependson='loaddata'}
+```{r evtNames, dependson='loaddata', cache=TRUE}
 length(unique(stormData$EVTYPE))
 moose<-unique(tolower(stormData$EVTYPE))
 length(moose)
@@ -95,18 +95,16 @@ The raw data will need to be tidied before it can be processed effectively. Firs
 
 based on [this post](https://www.coursera.org/learn/reproducible-research/discussions/weeks/4/threads/IdtP_JHzEeaePQ71AQUtYw) in the course discussion forums, it was only after January 1996 that NOAA started recording events of all types. Tornado data was present from the beginning (1950), but other types of weather events were reported and recorded later. Data prior to January 1996 will be omitted, as analysis of this data could introduce bias due to lack of records on certain weather types.
 
-```{r storm1996, cache=TRUE}
+```{r storm1996, cache=TRUE, dependson='evtNames'}
 library(dplyr)
 stormData$BGN_DATE<-as.Date(stormData$BGN_DATE,format='%m/%d/%Y')
 storm96<-stormData %>% filter(BGN_DATE >  '1996-01-01')
 
-
 ```
 Crop and property damage are stored strangely, with the first few significant digits stored seperately from the dollar exponent.** blah blah **
 
-```{r storm96Interesting, cache=TRUE}
+```{r storm96Interesting, cache=TRUE, dependson='storm1996'}
 storm96$CropDamage<-storm96$CROPDMG
-class(storm96$CROPDMGEXP)
 levels(as.factor(storm96$CROPDMGEXP) )
 
 # scale crop damage
@@ -119,11 +117,8 @@ storm96$CropDamage[thelist]<-storm96$CropDamage[thelist]*1.0e6
 
 # scale property damage
 storm96$PropDamage<-storm96$PROPDMG
-class(storm96$PROPDMGEXP)
 levels(as.factor(storm96$PROPDMGEXP) )
 
-thelist<-grepl('[1-8]',storm96$PROPDMGEXP)
-sum(thelist)
 thelist<-grepl('[bB]',storm96$PROPDMGEXP)
 storm96$PropDamage[thelist]<-storm96$PropDamage[thelist]*1.0e9
 thelist<-grepl('[mM]',storm96$PROPDMGEXP)
@@ -137,11 +132,9 @@ filter(PropDamage>0 | CropDamage >0 | INJURIES >0 | FATALITIES >0)
 length(unique(slim96$EVTYPE))
 
 ```
-
-
 Right now there are 222 event types. Start by casting everything to lower case, and by removing any leading whitespace
 
-```{r evntCasting1}
+```{r evntCasting1, cache=TRUE, dependson='storm96Interesting'}
 slim96$EventType<-tolower(slim96$EVTYPE)
 # trimws is new? doesn't exist in older R versions
 #slim96$EventType<-trimws(slim96$EventType)
@@ -150,7 +143,7 @@ length(unique(slim96$EventType))
 ```
 
 Start Reclassifying things/filtering things
-```{r cleaning, cache=TRUE}
+```{r cleaning, cache=TRUE, dependson='evntCasting1'}
 
 # remove things that can't be reclassified easily
 badcodes<-c("astronomical high tide","other","marine accident", "coastal storm","coastalstorm","beach erosion","glaze","mixed precip","dam break","coastal erosion" )
@@ -261,7 +254,6 @@ slim96$EventType[grepl('fire',slim96$EventType)]<-'wildfire'
 moose<-unique(slim96$EventType)
 moose[order(moose)]                  
 
-
 ```
 
 following event codes are absent from the data:
@@ -275,9 +267,39 @@ following event codes are absent from the data:
  8. sleet
 
 
+## Results
 
+What are the costliest (individual) events?
+```{r summary,dependson='cleaning',cache=TRUE}
+slim96$TotalDamage<-slim96$CropDamage + slim96$PropDamage
+slim96 %>% select(BGN_DATE,EventType,TotalDamage,LATITUDE,LONGITUDE) %>% arrange(desc(TotalDamage)) %>% head(n=10)
 
+```
+https://www.ncdc.noaa.gov/billions/events - the 150 billion flood is prolly related to Hurricane Katrina.
 
+```{r plot1, dependson='cleaning'}
+library(ggplot2)
+library(dplyr)
+
+AggStorms<- slim96 %>% select(EventType,TotalDamage,FATALITIES,INJURIES) %>% group_by(EventType) %>% 
+summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,TotalFatalities=FATALITIES)
+
+damageStorms<- AggStorms %>% filter(TotalDamageSum >0 )
+
+g<-ggplot(data=damageStorms,aes(x=EventType,y=TotalDamageSum,fill=EventType))
+g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
+```
+
+```{r plot1a, dependson='cleaning'}
+library(ggplot2)
+library(dplyr)
+#slim96$TotalDamage<-slim96$CropDamage + slim96$PropDamage
+
+#damageStormsa<- AggStorms %>% filter(TotalDamageSum >0 )
+
+g<-ggplot(data=slim96["TotalDamage" > 0,] ,aes(x=EventType,y=TotalDamage), log='y')
+g+ geom_point(colour='red') + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
 
 
 questions: what event types are worst for population health

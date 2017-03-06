@@ -178,14 +178,6 @@ Crop and property damage are stored strangely, with the first few significant di
 
 ```r
 storm96$CropDamage<-storm96$CROPDMG
-class(storm96$CROPDMGEXP)
-```
-
-```
-## [1] "character"
-```
-
-```r
 levels(as.factor(storm96$CROPDMGEXP) )
 ```
 
@@ -204,28 +196,11 @@ storm96$CropDamage[thelist]<-storm96$CropDamage[thelist]*1.0e6
 
 # scale property damage
 storm96$PropDamage<-storm96$PROPDMG
-class(storm96$PROPDMGEXP)
-```
-
-```
-## [1] "character"
-```
-
-```r
 levels(as.factor(storm96$PROPDMGEXP) )
 ```
 
 ```
 ## [1] ""  "0" "B" "K" "M"
-```
-
-```r
-thelist<-grepl('[1-8]',storm96$PROPDMGEXP)
-sum(thelist)
-```
-
-```
-## [1] 0
 ```
 
 ```r
@@ -245,8 +220,6 @@ length(unique(slim96$EVTYPE))
 ```
 ## [1] 222
 ```
-
-
 Right now there are 222 event types. Start by casting everything to lower case, and by removing any leading whitespace
 
 
@@ -445,9 +418,78 @@ following event codes are absent from the data:
  8. sleet
 
 
+## Results
+
+What are the costliest (individual) events?
+
+```r
+slim96$TotalDamage<-slim96$CropDamage + slim96$PropDamage
+slim96 %>% select(BGN_DATE,EventType,TotalDamage,LATITUDE,LONGITUDE) %>% arrange(desc(TotalDamage)) %>% head(n=10)
+```
+
+```
+##      BGN_DATE           EventType  TotalDamage LATITUDE LONGITUDE
+## 1  2006-01-01               flood 115032500000     3828     12218
+## 2  2005-08-29    storm surge/tide  31300000000        0         0
+## 3  2005-08-28 hurricane (typhoon)  16930000000        0         0
+## 4  2005-08-29    storm surge/tide  11260000000        0         0
+## 5  2005-10-24 hurricane (typhoon)  10000000000        0         0
+## 6  2005-08-29 hurricane (typhoon)   7390000000        0         0
+## 7  2005-08-28 hurricane (typhoon)   7350000000        0         0
+## 8  2004-08-13 hurricane (typhoon)   5705000000        0         0
+## 9  2001-06-05      tropical storm   5150000000        0         0
+## 10 2004-09-04 hurricane (typhoon)   4923200000        0         0
+```
+https://www.ncdc.noaa.gov/billions/events - the 150 billion flood is prolly related to Hurricane Katrina.
 
 
+```r
+library(ggplot2)
+library(dplyr)
+```
 
+```
+## 
+## Attaching package: 'dplyr'
+```
+
+```
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+```
+
+```
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
+```
+
+```r
+AggStorms<- slim96 %>% select(EventType,TotalDamage,FATALITIES,INJURIES) %>% group_by(EventType) %>% 
+summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,TotalFatalities=FATALITIES)
+
+damageStorms<- AggStorms %>% filter(TotalDamageSum >0 )
+
+g<-ggplot(data=damageStorms,aes(x=EventType,y=TotalDamageSum,fill=EventType))
+g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
+```
+
+![plot of chunk plot1](figure/plot1-1.png)
+
+
+```r
+library(ggplot2)
+library(dplyr)
+#slim96$TotalDamage<-slim96$CropDamage + slim96$PropDamage
+
+#damageStormsa<- AggStorms %>% filter(TotalDamageSum >0 )
+
+g<-ggplot(data=slim96["TotalDamage" > 0,] ,aes(x=EventType,y=TotalDamage), log='y')
+g+ geom_point(colour='red') + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+![plot of chunk plot1a](figure/plot1a-1.png)
 
 
 questions: what event types are worst for population health
