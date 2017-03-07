@@ -446,6 +446,39 @@ https://www.ncdc.noaa.gov/billions/events - the 150 billion flood is prolly rela
 ```r
 library(ggplot2)
 library(dplyr)
+
+AggStorms<- slim96 %>% select(EventType,TotalDamage,FATALITIES,INJURIES) %>% group_by(EventType) %>% 
+summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,TotalFatalities=FATALITIES)
+
+
+head(AggStorms)
+```
+
+```
+## # A tibble: 6 × 4
+##               EventType TotalDamageSum TotalInjuries TotalFatalities
+##                   <chr>          <dbl>         <dbl>           <dbl>
+## 1 astronomical low tide         320000             0               0
+## 2             avalanche        3711800           156             223
+## 3              blizzard      532718950           385              70
+## 4         coastal flood      406452560             8               6
+## 5       cold/wind chill       33386500            24             140
+## 6           debris flow      346645100            55              43
+```
+
+```r
+damageStorms<-AggStorms %>% arrange(desc(TotalDamageSum)) %>% head(n=20)
+
+g<-ggplot(data=damageStorms,aes(x=EventType,y=TotalDamageSum,fill=EventType))
+g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
+```
+
+![plot of chunk plot1](figure/plot1-1.png)
+
+
+```r
+library(ggplot2)
+library(dplyr)
 ```
 
 ```
@@ -466,27 +499,10 @@ library(dplyr)
 ```
 
 ```r
-AggStorms<- slim96 %>% select(EventType,TotalDamage,FATALITIES,INJURIES) %>% group_by(EventType) %>% 
-summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,TotalFatalities=FATALITIES)
+casStorms<-AggStorms %>% mutate(casualties=TotalInjuries + TotalFatalities) %>% arrange(desc(casualties)) %>% head(n=20)
 
-damageStorms<- AggStorms %>% filter(TotalDamageSum >0 )
-
-g<-ggplot(data=damageStorms,aes(x=EventType,y=TotalDamageSum,fill=EventType))
+g<-ggplot(data=casStorms,aes(x=EventType,y=casualties,fill=EventType))
 g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
-```
-
-![plot of chunk plot1](figure/plot1-1.png)
-
-
-```r
-library(ggplot2)
-library(dplyr)
-#slim96$TotalDamage<-slim96$CropDamage + slim96$PropDamage
-
-#damageStormsa<- AggStorms %>% filter(TotalDamageSum >0 )
-
-g<-ggplot(data=slim96["TotalDamage" > 0,] ,aes(x=EventType,y=TotalDamage), log='y')
-g+ geom_point(colour='red') + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 ![plot of chunk plot1a](figure/plot1a-1.png)
@@ -502,4 +518,43 @@ plot propdamageexp vs magnitude, colour = eventtype
 where do these occur most
 plot lat and long, colour = mag, on a map of US
 
+
+```r
+library(ggplot2)
+library(ggmap)
+library(dplyr)
+
+floodnados<-slim96 %>% filter(EventType %in% c('flood','tornado')) %>% mutate(Lat=LATITUDE/100.0,Lon=-1.0*LONGITUDE/100.0)
+
+
+
+mapus<-qmap("usa",zoom=3)
+```
+
+```
+## Map from URL : http://maps.googleapis.com/maps/api/staticmap?center=usa&zoom=3&size=640x640&scale=2&maptype=terrain&language=en-EN&sensor=false
+```
+
+```
+## Information from URL : http://maps.googleapis.com/maps/api/geocode/json?address=usa&sensor=false
+```
+
+```
+## Warning: `panel.margin` is deprecated. Please use `panel.spacing` property
+## instead
+```
+
+```r
+#
+#
+#g<-ggplot(aes(x=Lon,y=Lat,colour=EventType,alpha=0.1),data=floodnados)
+#g + geom_point()
+ mapus + geom_point(aes(x=Lon,y=Lat,colour=EventType,alpha=0.05),data=floodnados)
+```
+
+```
+## Warning: Removed 4441 rows containing missing values (geom_point).
+```
+
+![plot of chunk mapplots](figure/mapplots-1.png)
 

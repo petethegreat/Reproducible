@@ -277,28 +277,30 @@ slim96 %>% select(BGN_DATE,EventType,TotalDamage,LATITUDE,LONGITUDE) %>% arrange
 ```
 https://www.ncdc.noaa.gov/billions/events - the 150 billion flood is prolly related to Hurricane Katrina.
 
-```{r plot1, dependson='cleaning'}
+```{r plot1, dependson='cleaning',cache=TRUE}
 library(ggplot2)
 library(dplyr)
 
 AggStorms<- slim96 %>% select(EventType,TotalDamage,FATALITIES,INJURIES) %>% group_by(EventType) %>% 
 summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,TotalFatalities=FATALITIES)
 
-damageStorms<- AggStorms %>% filter(TotalDamageSum >0 )
+
+head(AggStorms)
+damageStorms<-AggStorms %>% arrange(desc(TotalDamageSum)) %>% head(n=20)
 
 g<-ggplot(data=damageStorms,aes(x=EventType,y=TotalDamageSum,fill=EventType))
 g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
 ```
 
-```{r plot1a, dependson='cleaning'}
+```{r plot1a, dependson=c('cleaning','plot1')}
 library(ggplot2)
 library(dplyr)
-#slim96$TotalDamage<-slim96$CropDamage + slim96$PropDamage
 
-#damageStormsa<- AggStorms %>% filter(TotalDamageSum >0 )
 
-g<-ggplot(data=slim96["TotalDamage" > 0,] ,aes(x=EventType,y=TotalDamage), log='y')
-g+ geom_point(colour='red') + theme(axis.text.x = element_text(angle = 90, hjust = 1))
+casStorms<-AggStorms %>% mutate(casualties=TotalInjuries + TotalFatalities) %>% arrange(desc(casualties)) %>% head(n=20)
+
+g<-ggplot(data=casStorms,aes(x=EventType,y=casualties,fill=EventType))
+g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
 ```
 
 
@@ -312,4 +314,20 @@ plot propdamageexp vs magnitude, colour = eventtype
 where do these occur most
 plot lat and long, colour = mag, on a map of US
 
+```{r mapplots,dependson='cleaning',cache=TRUE}
+library(ggplot2)
+library(ggmap)
+library(dplyr)
+
+floodnados<-slim96 %>% filter(EventType %in% c('flood','tornado')) %>% mutate(Lat=LATITUDE/100.0,Lon=-1.0*LONGITUDE/100.0)
+
+
+
+mapus<-qmap("usa",zoom=3)
+#
+#
+#g<-ggplot(aes(x=Lon,y=Lat,colour=EventType,alpha=0.1),data=floodnados)
+#g + geom_point()
+ mapus + geom_point(aes(x=Lon,y=Lat,colour=EventType,alpha=0.05),data=floodnados)
+```
 
