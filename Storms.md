@@ -445,18 +445,40 @@ https://www.ncdc.noaa.gov/billions/events - the 150 billion flood is prolly rela
 
 ```r
 library(ggplot2)
+library(dplyr)
+
+AggStorms<- slim96 %>% select(EventType,TotalDamage,FATALITIES,INJURIES) %>% group_by(EventType) %>% 
+summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,TotalFatalities=FATALITIES)
+
+
+head(AggStorms)
 ```
 
 ```
-## Warning: package 'ggplot2' was built under R version 3.1.3
+## # A tibble: 6 × 4
+##               EventType TotalDamageSum TotalInjuries TotalFatalities
+##                   <chr>          <dbl>         <dbl>           <dbl>
+## 1 astronomical low tide         320000             0               0
+## 2             avalanche        3711800           156             223
+## 3              blizzard      532718950           385              70
+## 4         coastal flood      406452560             8               6
+## 5       cold/wind chill       33386500            24             140
+## 6           debris flow      346645100            55              43
 ```
 
 ```r
-library(dplyr)
+damageStorms<-AggStorms %>% arrange(desc(TotalDamageSum)) %>% head(n=20)
+
+g<-ggplot(data=damageStorms,aes(x=EventType,y=TotalDamageSum,fill=EventType))
+g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
 ```
 
-```
-## Warning: package 'dplyr' was built under R version 3.1.3
+![plot of chunk plot1](figure/plot1-1.png)
+
+
+```r
+library(ggplot2)
+library(dplyr)
 ```
 
 ```
@@ -477,92 +499,15 @@ library(dplyr)
 ```
 
 ```r
-AggStorms<- slim96 %>% select(EventType,TotalDamage,FATALITIES,INJURIES) %>% group_by(EventType) %>% 
-summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,TotalFatalities=FATALITIES)
+casStorms<-AggStorms %>% mutate(casualties=TotalInjuries + TotalFatalities) %>% arrange(desc(casualties)) %>% head(n=20)
 
-damageStorms<- AggStorms %>% filter(TotalDamageSum >0 )
-
-g<-ggplot(data=damageStorms,aes(x=EventType,y=TotalDamageSum,fill=EventType))
+g<-ggplot(data=casStorms,aes(x=EventType,y=casualties,fill=EventType))
 g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
-```
-
-![plot of chunk plot1](figure/plot1-1.png)
-
-
-```r
-library(ggplot2)
-library(dplyr)
-#slim96$TotalDamage<-slim96$CropDamage + slim96$PropDamage
-
-#damageStormsa<- AggStorms %>% filter(TotalDamageSum >0 )
-
-g<-ggplot(data=slim96["TotalDamage" > 0,] ,aes(x=EventType,y=TotalDamage), log='y')
-g+ geom_point(colour='red') + theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
 ![plot of chunk plot1a](figure/plot1a-1.png)
 
 
-
-
-```r
-library(ggplot2)
-library(dplyr)
-library(ggmap)
-
-coords<-slim96 %>% filter(!(is.na(LATITUDE)) & ! (is.na(LONGITUDE))) %>% filter(LATITUDE !=0 & LONGITUDE != 0) %>% mutate(CoordLat=LATITUDE/100.0,CoordLong=LONGITUDE/100.0)
-dim(coords)
-```
-
-```
-## [1] 159316     12
-```
-
-```r
-head(coords)
-```
-
-```
-##     BGN_DATE    EVTYPE PropDamage CropDamage INJURIES FATALITIES LATITUDE
-## 1 1996-01-11   TORNADO     100000          0        0          0     3116
-## 2 1996-01-11 TSTM WIND       3000          0        0          0     3119
-## 3 1996-01-11 TSTM WIND       5000          0        0          0     3119
-## 4 1996-01-11 TSTM WIND       2000          0        0          0     3121
-## 5 1996-01-19 TSTM WIND      12000          0        0          0     3345
-## 6 1996-01-24 TSTM WIND       8000          0        0          0     3238
-##   LONGITUDE         EventType TotalDamage CoordLat CoordLong
-## 1      8608           tornado      100000    31.16     86.08
-## 2      8551 thunderstorm wind        3000    31.19     85.51
-## 3      8533 thunderstorm wind        5000    31.19     85.33
-## 4      8521 thunderstorm wind        2000    31.21     85.21
-## 5      8807 thunderstorm wind       12000    33.45     88.07
-## 6      8607 thunderstorm wind        8000    32.38     86.07
-```
-
-```r
-# p<- geom_point(aes(x=CoordLat,y=CoordLong,alpha=0.1,size=log10(TotalDamage+1)),data=coords)
-g<- ggplot(data=coords,aes(x=CoordLat,y=CoordLong,colour='red'))
-
-# p<- geom_point(aes(x=CoordLat,y=CoordLong,colour='red'),data=coords)
-
-g + geom_point() + ggmap(get_map("USA",zoom=4),legend='topleft') 
-```
-
-```
-## Map from URL : http://maps.googleapis.com/maps/api/staticmap?center=USA&zoom=4&size=640x640&scale=2&maptype=terrain&language=en-EN&sensor=false
-```
-
-```
-## Information from URL : http://maps.googleapis.com/maps/api/geocode/json?address=USA&sensor=false
-```
-
-```
-## Warning: Incompatible methods ("+.gg", "Ops.data.frame") for "+"
-```
-
-```
-## Error in p + o: non-numeric argument to binary operator
-```
 questions: what event types are worst for population health
 panel plot fatalities vs magnitude, colour = evtype
 injuries vs magnitude, colour = evetype
@@ -573,4 +518,43 @@ plot propdamageexp vs magnitude, colour = eventtype
 where do these occur most
 plot lat and long, colour = mag, on a map of US
 
+
+```r
+library(ggplot2)
+library(ggmap)
+library(dplyr)
+
+floodnados<-slim96 %>% filter(EventType %in% c('flood','tornado')) %>% mutate(Lat=LATITUDE/100.0,Lon=-1.0*LONGITUDE/100.0)
+
+
+
+mapus<-qmap("usa",zoom=3)
+```
+
+```
+## Map from URL : http://maps.googleapis.com/maps/api/staticmap?center=usa&zoom=3&size=640x640&scale=2&maptype=terrain&language=en-EN&sensor=false
+```
+
+```
+## Information from URL : http://maps.googleapis.com/maps/api/geocode/json?address=usa&sensor=false
+```
+
+```
+## Warning: `panel.margin` is deprecated. Please use `panel.spacing` property
+## instead
+```
+
+```r
+#
+#
+#g<-ggplot(aes(x=Lon,y=Lat,colour=EventType,alpha=0.1),data=floodnados)
+#g + geom_point()
+ mapus + geom_point(aes(x=Lon,y=Lat,colour=EventType,alpha=0.05),data=floodnados)
+```
+
+```
+## Warning: Removed 4441 rows containing missing values (geom_point).
+```
+
+![plot of chunk mapplots](figure/mapplots-1.png)
 
