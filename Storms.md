@@ -445,7 +445,18 @@ https://www.ncdc.noaa.gov/billions/events - the 150 billion flood is prolly rela
 
 ```r
 library(ggplot2)
+```
+
+```
+## Warning: package 'ggplot2' was built under R version 3.1.3
+```
+
+```r
 library(dplyr)
+```
+
+```
+## Warning: package 'dplyr' was built under R version 3.1.3
 ```
 
 ```
@@ -492,6 +503,66 @@ g+ geom_point(colour='red') + theme(axis.text.x = element_text(angle = 90, hjust
 ![plot of chunk plot1a](figure/plot1a-1.png)
 
 
+
+
+```r
+library(ggplot2)
+library(dplyr)
+library(ggmap)
+
+coords<-slim96 %>% filter(!(is.na(LATITUDE)) & ! (is.na(LONGITUDE))) %>% filter(LATITUDE !=0 & LONGITUDE != 0) %>% mutate(CoordLat=LATITUDE/100.0,CoordLong=LONGITUDE/100.0)
+dim(coords)
+```
+
+```
+## [1] 159316     12
+```
+
+```r
+head(coords)
+```
+
+```
+##     BGN_DATE    EVTYPE PropDamage CropDamage INJURIES FATALITIES LATITUDE
+## 1 1996-01-11   TORNADO     100000          0        0          0     3116
+## 2 1996-01-11 TSTM WIND       3000          0        0          0     3119
+## 3 1996-01-11 TSTM WIND       5000          0        0          0     3119
+## 4 1996-01-11 TSTM WIND       2000          0        0          0     3121
+## 5 1996-01-19 TSTM WIND      12000          0        0          0     3345
+## 6 1996-01-24 TSTM WIND       8000          0        0          0     3238
+##   LONGITUDE         EventType TotalDamage CoordLat CoordLong
+## 1      8608           tornado      100000    31.16     86.08
+## 2      8551 thunderstorm wind        3000    31.19     85.51
+## 3      8533 thunderstorm wind        5000    31.19     85.33
+## 4      8521 thunderstorm wind        2000    31.21     85.21
+## 5      8807 thunderstorm wind       12000    33.45     88.07
+## 6      8607 thunderstorm wind        8000    32.38     86.07
+```
+
+```r
+# p<- geom_point(aes(x=CoordLat,y=CoordLong,alpha=0.1,size=log10(TotalDamage+1)),data=coords)
+g<- ggplot(data=coords,aes(x=CoordLat,y=CoordLong,colour='red'))
+
+# p<- geom_point(aes(x=CoordLat,y=CoordLong,colour='red'),data=coords)
+
+g + geom_point() + ggmap(get_map("USA",zoom=4),legend='topleft') 
+```
+
+```
+## Map from URL : http://maps.googleapis.com/maps/api/staticmap?center=USA&zoom=4&size=640x640&scale=2&maptype=terrain&language=en-EN&sensor=false
+```
+
+```
+## Information from URL : http://maps.googleapis.com/maps/api/geocode/json?address=USA&sensor=false
+```
+
+```
+## Warning: Incompatible methods ("+.gg", "Ops.data.frame") for "+"
+```
+
+```
+## Error in p + o: non-numeric argument to binary operator
+```
 questions: what event types are worst for population health
 panel plot fatalities vs magnitude, colour = evtype
 injuries vs magnitude, colour = evetype
