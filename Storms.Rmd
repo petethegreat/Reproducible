@@ -320,9 +320,9 @@ plot lat and long, colour = mag, on a map of US
 ```{r mapplotsa, cache=TRUE}
 #
 floodnados<-slim96 %>% filter(EventType %in% c('flood','tornado')) %>% mutate(Lat=LATITUDE/100.0,Lon=-1.0*LONGITUDE/100.0)
-
+# not 100% sure that the lat/long mapping is correct. Think that the Longitude needs that factor of -1. The LATTITUDE/LONGITUDE variables may be in degrees*100 + minutes, rather than decimal degrees*100. If so, then our coordinates might be off by up to 0.4 degrees. So there might be some inaccuracy in the coordinates used for plotting, but it shouldn't be a big deal.
 mapus2<-ggmap(get_map("usa",zoom=4),extent='device')
-mapus2 + stat_density2d(data=floodnados,aes(x=Lon,y=Lat,fill=..level..,alpha=..level..,colour=EventType),bins = 6, geom = "polygon") + facet_wrap(~EventType,nrow=1) + theme(legend.position='none') + theme()
+mapus2 + stat_density2d(data=floodnados,aes(x=Lon,y=Lat,fill=..level..,alpha=..level..,colour=EventType),bins = 6, geom = "polygon") + facet_wrap(~EventType,ncol=1) + theme(legend.position='none') + theme()
 
 
 ```

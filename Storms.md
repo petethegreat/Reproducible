@@ -536,7 +536,7 @@ mapus2<-ggmap(get_map("usa",zoom=4),extent='device')
 ```
 
 ```r
-mapus2 + stat_density2d(data=floodnados,aes(x=Lon,y=Lat,fill=..level..,alpha=..level..,colour=EventType),bins = 4, geom = "polygon") + facet_wrap(~EventType,nrow=1) + theme(legend.position='none') + theme()
+mapus2 + stat_density2d(data=floodnados,aes(x=Lon,y=Lat,fill=..level..,alpha=..level..,colour=EventType),bins = 6, geom = "polygon") + facet_wrap(~EventType,ncol=1) + theme(legend.position='none') + theme()
 ```
 
 ```
