@@ -4,14 +4,18 @@ output:
   html_document:
     keep_md: true
 ---
-Reproducible Research assignment 2: Storm Data
+NOAA Storm Data: Health and Economic Effects  
 ==============================================================
 
-
-# Title
-
 ## Introduction
-some notes
+** Does the document have a synopsis that describes and summarizes the data analysis in less than 10 sentences? **
+
+```{r packages}
+opts_chunk$set(fig.width=8, fig.height=8,dpi=144)
+require(ggplot2)
+require(dplyr)
+require(ggmap)
+```
 
 ## obtaining data
 data comes from blah
@@ -23,12 +27,12 @@ if (! file.exists(destfile))
 }
 stormData<-read.csv('./StormData.csv.bz2',stringsAsFactors=FALSE)
 
-head(stormData)
+str(stormData)
 ```
 
 ## Data Processing
 
-The Event type code (EVTYPE) is important, as it will be used to categorise the data. Unfortunately, there are many errors and inconsistencies in the raw data. For example:
+The Event type code (EVTYPE) is important, as it will be used to categorise the data. Unfortunately, there are many errors and inconsistencies in the raw data.
 ```{r evtNames, dependson='loaddata', cache=TRUE}
 length(unique(stormData$EVTYPE))
 moose<-unique(tolower(stormData$EVTYPE))
@@ -91,9 +95,9 @@ There are 87 event types that differ only in the case (upper or lower) of their 
 - Winter Weather
 
 
-The raw data will need to be tidied before it can be processed effectively. First the observations (rows) of interest will be selected (as this will limit the range of EVTYPE codes that need to be corrected), and then regular expressions will be used to correct the event type codes to one of the 48 options listed above.
+The raw data will need to be tidied before it can be processed effectively. First the observations (rows) of interest are selected (as this will limit the range of EVTYPE codes that need to be corrected), and then regular expressions are used to correct the event type codes to one of the 48 options listed above. Events that don't correspond to these event types will be removed, as they are not "allowed" by the NOAA and so may not have been recorded consistently (the events of these types that are included may not give an accurate representation of these storm types). 
 
-based on [this post](https://www.coursera.org/learn/reproducible-research/discussions/weeks/4/threads/IdtP_JHzEeaePQ71AQUtYw) in the course discussion forums, it was only after January 1996 that NOAA started recording events of all types. Tornado data was present from the beginning (1950), but other types of weather events were reported and recorded later. Data prior to January 1996 will be omitted, as analysis of this data could introduce bias due to lack of records on certain weather types.
+Based on [this post](https://www.coursera.org/learn/reproducible-research/discussions/weeks/4/threads/IdtP_JHzEeaePQ71AQUtYw) in the course discussion forums, it was only after January 1996 that NOAA started recording events of all types. Tornado data was present from the beginning (1950), but other types of weather events were reported and recorded later. Data prior to January 1996 will be omitted, as analysis of this data could introduce bias due to lack of records on certain weather types.
 
 ```{r storm1996, cache=TRUE, dependson='evtNames'}
 library(dplyr)
@@ -142,7 +146,7 @@ slim96$EventType<-gsub('^\\s+|\\s+$','',slim96$EventType)
 length(unique(slim96$EventType))
 ```
 
-Start Reclassifying things/filtering things
+Reclassify/filter things
 ```{r cleaning, cache=TRUE, dependson='evntCasting1'}
 
 # remove things that can't be reclassified easily
@@ -151,24 +155,19 @@ slim96<- slim96 %>% filter(! (EventType  %in% badcodes))
 
 # change non thunderstorm winds to strong winds
 slim96$EventType<-gsub('non[ -]tstm wind','strong wind',slim96$EventType)
-length(unique(slim96$EventType))
 
 #change tstm/thunderstorm wind to thunderstorm wind
 change<-with(slim96, (grepl('tstm',EventType) | grepl('thunderstorm',EventType)) & grepl('wind',EventType))
 slim96$EventType[change]<-'thunderstorm wind'
-length(unique(slim96$EventType))
 
 # change 'blowing dust' to dust devil
 slim96[slim96$EventType=='blowing dust','EventType']<-'dust devil'
-length(unique(slim96$EventType))
 
 #change mudslide or similar to debris flow
 slim96$EventType<-gsub('mud[ -]?slides?','debris flow',slim96$EventType)
-length(unique(slim96$EventType))
 
 # change any remaining occurences of "coastal" to coastal flood
 slim96[grepl('coastal|tidal|cstl',slim96$EventType),'EventType'] <-'coastal flood'
-length(unique(slim96$EventType))
 
 # change (non extreme) cold to cold/windchill
 slim96[grepl('cold|thermia',slim96$EventType) & (! grepl('extreme',slim96$EventType)),'EventType'] <-'cold/wind chill'
@@ -184,8 +183,6 @@ slim96[grepl('fog',slim96$EventType),'EventType'] <-'dense fog'
 
 # blowing dust or whirlwind to dust devil
 slim96$EventType[grepl('whirl|dust',slim96$EventType)]<-'dust devil'
-
-length(unique(slim96$EventType))
 
 # record heat to excessive heat
 slim96$EventType[grepl('record heat',slim96$EventType)]<-"excessive heat"
@@ -251,12 +248,13 @@ slim96$EventType[ slim96$EventType== 'thunderstorm']<-'thunderstorm wind'
 # wildfire
 slim96$EventType[grepl('fire',slim96$EventType)]<-'wildfire'
 
+#print the current list of event types
 moose<-unique(slim96$EventType)
 moose[order(moose)]                  
 
 ```
 
-following event codes are absent from the data:
+The following event codes are absent from the data:
  1. dust storm
  2. freezing fog
  3. lakeshore flood
@@ -268,23 +266,23 @@ following event codes are absent from the data:
 
 
 ## Results
+Do the figure(s) have descriptive captions (i.e. there is a description near the figure of what is happening in the figure)?
+Does the analysis address the question of which types of events are most harmful to population health?
+Does the analysis address the question of which types of events have the greatest economic consequences?
 
+** axis labels and units on all plots **
 What are the costliest (individual) events?
 ```{r summary,dependson='cleaning',cache=TRUE}
 slim96$TotalDamage<-slim96$CropDamage + slim96$PropDamage
 slim96 %>% select(BGN_DATE,EventType,TotalDamage,LATITUDE,LONGITUDE) %>% arrange(desc(TotalDamage)) %>% head(n=10)
 
 ```
-https://www.ncdc.noaa.gov/billions/events - the 150 billion flood is prolly related to Hurricane Katrina.
+Many of these are from the [2005 Atlantic hurricane season](https://en.wikipedia.org/wiki/2005_Atlantic_hurricane_season)
+Hurricane Katrina was active during August 23-29, 2005, which accounts for 5 of 10 storms on this list. The October 24 storm (#5) corresponds to hurricane Rita, and the the 150 billion flood dated January first, 2006 is also [probably Katrina related] (https://www.ncdc.noaa.gov/billions/events).
 
 ```{r plot1, dependson='cleaning',cache=TRUE}
-library(ggplot2)
-library(dplyr)
-
 AggStorms<- slim96 %>% select(EventType,TotalDamage,FATALITIES,INJURIES) %>% group_by(EventType) %>% 
 summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,TotalFatalities=FATALITIES)
-
-
 head(AggStorms)
 damageStorms<-AggStorms %>% arrange(desc(TotalDamageSum)) %>% head(n=20)
 
@@ -305,22 +303,7 @@ g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjus
 
 
 
-```{r mapPlot,cache=TRUE,dependson='cleaning'}
-library(ggplot2)
-library(dplyr)
-library(ggmap)
 
-coords<-slim96 %>% filter(!(is.na(LATITUDE)) & ! (is.na(LONGITUDE))) %>% filter(LATITUDE !=0 & LONGITUDE != 0) %>% mutate(CoordLat=LATITUDE/100.0,CoordLong=LONGITUDE/100.0)
-dim(coords)
-head(coords)
-# p<- geom_point(aes(x=CoordLat,y=CoordLong,alpha=0.1,size=log10(TotalDamage+1)),data=coords)
-g<- ggplot(data=coords,aes(x=CoordLat,y=CoordLong,colour='red'))
-
-# p<- geom_point(aes(x=CoordLat,y=CoordLong,colour='red'),data=coords)
-
-g + geom_point() + ggmap(get_map("USA",zoom=4),legend='topleft') 
-
-```
 questions: what event types are worst for population health
 panel plot fatalities vs magnitude, colour = evtype
 injuries vs magnitude, colour = evetype
@@ -331,20 +314,16 @@ plot propdamageexp vs magnitude, colour = eventtype
 where do these occur most
 plot lat and long, colour = mag, on a map of US
 
-```{r mapplots,dependson='cleaning',cache=TRUE}
-library(ggplot2)
-library(ggmap)
-library(dplyr)
+(plots are made using [ggmap](https://journal.r-project.org/archive/2013-1/kahle-wickham.pdf) and [ggplot2](http://ggplot2.org/))
 
+
+```{r mapplotsa, cache=TRUE}
+#
 floodnados<-slim96 %>% filter(EventType %in% c('flood','tornado')) %>% mutate(Lat=LATITUDE/100.0,Lon=-1.0*LONGITUDE/100.0)
 
+mapus2<-ggmap(get_map("usa",zoom=4),extent='device')
+mapus2 + stat_density2d(data=floodnados,aes(x=Lon,y=Lat,fill=..level..,alpha=..level..,colour=EventType),bins = 4, geom = "polygon") + facet_wrap(~EventType,nrow=1) + theme(legend.position='none') + theme()
 
 
-mapus<-qmap("usa",zoom=3)
-#
-#
-#g<-ggplot(aes(x=Lon,y=Lat,colour=EventType,alpha=0.1),data=floodnados)
-#g + geom_point()
- mapus + geom_point(aes(x=Lon,y=Lat,colour=EventType,alpha=0.05),data=floodnados)
 ```
 
