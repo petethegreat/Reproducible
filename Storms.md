@@ -20,20 +20,12 @@ require(ggplot2)
 ## Loading required package: ggplot2
 ```
 
-```
-## Warning: package 'ggplot2' was built under R version 3.1.3
-```
-
 ```r
 require(dplyr)
 ```
 
 ```
 ## Loading required package: dplyr
-```
-
-```
-## Warning: package 'dplyr' was built under R version 3.1.3
 ```
 
 ```
@@ -61,12 +53,8 @@ require(ggmap)
 ## Loading required package: ggmap
 ```
 
-```
-## Warning: package 'ggmap' was built under R version 3.1.3
-```
-
 ## obtaining data
-data comes from blah
+The data for this analysis comes from the National Oceanic and Atmospheric Administration's National Weather Service. The (compressed) csv can be downloaded [from here](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2). The data for this analysis was downloaded on February 28, 2017.
 
 ```r
 destfile='StormData.csv.bz2'
@@ -228,7 +216,9 @@ library(dplyr)
 stormData$BGN_DATE<-as.Date(stormData$BGN_DATE,format='%m/%d/%Y')
 storm96<-stormData %>% filter(BGN_DATE >  '1996-01-01')
 ```
-Crop and property damage are stored strangely, with the first few significant digits stored seperately from the dollar exponent.** blah blah **
+Crop and property damage are stored strangely, with the first few significant digits stored seperately from the dollar exponent. The actual cost are calculated by multiplying the values in the damage column by one thousand, one million, or one billion for exponent values of "K","M", or "B" respectively.
+
+As this the object of the analysis is to study the economic and health effects of weather events, observations in which there were no injuries or fatalities, or damage to crops or property, are of little interest. These observations are removed.
 
 
 ```r
@@ -241,6 +231,25 @@ levels(as.factor(storm96$CROPDMGEXP) )
 ```
 
 ```r
+# are the '' values in the CROPDMGEXP relevant?
+min(storm96$CROPDMG[storm96$CROPDMGEXP==''])
+```
+
+```
+## [1] 0
+```
+
+```r
+max(storm96$CROPDMG[storm96$CROPDMGEXP==''])
+```
+
+```
+## [1] 0
+```
+
+```r
+# ...no
+
 # scale crop damage
 thelist<-with(storm96, CROPDMGEXP=='B')
 storm96$CropDamage[thelist]<-storm96$CropDamage[thelist]*1.0e9
@@ -259,6 +268,25 @@ levels(as.factor(storm96$PROPDMGEXP) )
 ```
 
 ```r
+# are the '0' values in the PROPDMGEXP relevant?
+min(storm96$PROPDMG[storm96$PROPDMGEXP=='0'])
+```
+
+```
+## [1] 0
+```
+
+```r
+max(storm96$PROPDMG[storm96$PROPDMGEXP=='0'])
+```
+
+```
+## [1] 0
+```
+
+```r
+# ...no
+
 thelist<-grepl('[bB]',storm96$PROPDMGEXP)
 storm96$PropDamage[thelist]<-storm96$PropDamage[thelist]*1.0e9
 thelist<-grepl('[mM]',storm96$PROPDMGEXP)
@@ -275,7 +303,7 @@ length(unique(slim96$EVTYPE))
 ```
 ## [1] 222
 ```
-Right now there are 222 event types. Start by casting everything to lower case, and by removing any leading whitespace
+Right now there are 222 event types. The final dataset should only contain some subset of the allowed event types listed above. Start by casting everything to lower case, and by removing any leading whitespace.
 
 
 ```r
@@ -290,7 +318,7 @@ length(unique(slim96$EventType))
 ## [1] 183
 ```
 
-Reclassify/filter things
+Regular expressions (implemented through the grepl and gsub functions) are used to rename event types. 
 
 ```r
 # remove things that can't be reclassified easily
@@ -385,7 +413,7 @@ slim96$EventType[grepl('rip current|drown',slim96$EventType)]<-"rip current"
 # storm surge
 slim96$EventType[grepl('storm surge',slim96$EventType)]<-"storm surge/tide"
 
-# thunderstorm winds - microbursts/downbursts are often associated with thunderstorms, so we include those here (wikipedia)
+# thunderstorm winds - microbursts/downbursts are often associated with thunderstorms, so those are included here (wikipedia)
 slim96$EventType[grepl('burst',slim96$EventType)]<-'thunderstorm wind'
 slim96$EventType[ slim96$EventType== 'thunderstorm']<-'thunderstorm wind'
 
@@ -430,17 +458,45 @@ The following event codes are absent from the data:
  7. marine thunderstorm wind
  8. sleet
 
+The final, tidied data used for this analysis is stored in the dataframe "slim96". 
+
 
 ## Results
+
 Do the figure(s) have descriptive captions (i.e. there is a description near the figure of what is happening in the figure)?
 Does the analysis address the question of which types of events are most harmful to population health?
 Does the analysis address the question of which types of events have the greatest economic consequences?
-
 ** axis labels and units on all plots **
-What are the costliest (individual) events?
+
+The event types of interest are those which have the largest effects on population health or which highest costs in terms of property or crop damage. Instead of looking at individual storm events, it is useful to summarise the data based on the weather event type, as this gives a better idea of which storm types were most significant overall.
 
 ```r
+#Form total damage from crop and property damage
 slim96$TotalDamage<-slim96$CropDamage + slim96$PropDamage
+
+#aggregate data based on EventType (total)
+AggStorms<- slim96 %>% select(EventType,TotalDamage,FATALITIES,INJURIES) %>% group_by(EventType) %>% 
+summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,TotalFatalities=FATALITIES)
+```
+### Across the United States, which types of events are most harmful with respect to population health?
+
+
+```r
+# get the 20 storm types with the highest total casualties (fatalities + injuries)
+casStorms<-AggStorms %>% mutate(casualties=TotalInjuries + TotalFatalities) %>% arrange(desc(casualties)) %>% head(n=20)
+
+# plot this in a bar chart
+g<-ggplot(data=casStorms,aes(x=EventType,y=casualties,fill=EventType))
+g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
+```
+
+![plot of chunk plot1](figure/plot1-1.png)
+
+### Across the United States, which types of events have the greatest economic consequences?
+
+What are the costliest (individual) events? Print the 10 storms with the highest damage (property + crop) costs.
+
+```r
 slim96 %>% select(BGN_DATE,EventType,TotalDamage,LATITUDE,LONGITUDE) %>% arrange(desc(TotalDamage)) %>% head(n=10)
 ```
 
@@ -460,25 +516,7 @@ slim96 %>% select(BGN_DATE,EventType,TotalDamage,LATITUDE,LONGITUDE) %>% arrange
 Many of these are from the [2005 Atlantic hurricane season](https://en.wikipedia.org/wiki/2005_Atlantic_hurricane_season)
 Hurricane Katrina was active during August 23-29, 2005, which accounts for 5 of 10 storms on this list. The October 24 storm (#5) corresponds to hurricane Rita, and the the 150 billion flood dated January first, 2006 is also [probably Katrina related] (https://www.ncdc.noaa.gov/billions/events).
 
-
-```r
-AggStorms<- slim96 %>% select(EventType,TotalDamage,FATALITIES,INJURIES) %>% group_by(EventType) %>% 
-summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,TotalFatalities=FATALITIES)
-head(AggStorms)
-```
-
-```
-## Source: local data frame [6 x 4]
-## 
-##               EventType TotalDamageSum TotalInjuries TotalFatalities
-##                   (chr)          (dbl)         (dbl)           (dbl)
-## 1 astronomical low tide         320000             0               0
-## 2             avalanche        3711800           156             223
-## 3              blizzard      532718950           385              70
-## 4         coastal flood      406452560             8               6
-## 5       cold/wind chill       33386500            24             140
-## 6           debris flow      346645100            55              43
-```
+Below is a bar chart of the 20 most damaging storm types.
 
 ```r
 damageStorms<-AggStorms %>% arrange(desc(TotalDamageSum)) %>% head(n=20)
@@ -487,21 +525,10 @@ g<-ggplot(data=damageStorms,aes(x=EventType,y=TotalDamageSum,fill=EventType))
 g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
 ```
 
-![plot of chunk plot1](figure/plot1-1.png)
-
-
-```r
-library(ggplot2)
-library(dplyr)
-
-
-casStorms<-AggStorms %>% mutate(casualties=TotalInjuries + TotalFatalities) %>% arrange(desc(casualties)) %>% head(n=20)
-
-g<-ggplot(data=casStorms,aes(x=EventType,y=casualties,fill=EventType))
-g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
-```
-
 ![plot of chunk plot1a](figure/plot1a-1.png)
+Floods are the most damaging event type, with a total cost of almost $150 billion USD. Note that most of this ($115 billion) is due to the flood on Jan 1, 2006. As mentioned earlier, this is presumably an effect of hurricane Katrina.
+
+
 
 
 
@@ -518,12 +545,19 @@ plot lat and long, colour = mag, on a map of US
 
 (plots are made using [ggmap](https://journal.r-project.org/archive/2013-1/kahle-wickham.pdf) and [ggplot2](http://ggplot2.org/))
 
+### Which areas are most prone to floods and tornadoes?
+(this wasn't an assigned question, but I thought it would be an interesting plot)
+
+The storm dataset contains information on lattitude and longitude. A map of the US can be displayed using the ggmap package, which works in conjunction with the ggplot2 plotting framework. The location data can then be overlaid on top of the map. A scatter plot could be used, but there are a lot of overlapping data points that make interpreting the data difficult. Instead, the location information is used to define a density function, and the contours of this function are plotted.
+
+Both types of weather events are on the Eastern half of the US. Flods seem to be more localised, generally occuring beneath the great lakes, but with a very high density in Iowa.
+Tornadoes are spread more evenly over the south eastern US, with the highest concentration in south (Alabama, Mississippi, Louisiana, Georgia).
 
 
 ```r
 #
 floodnados<-slim96 %>% filter(EventType %in% c('flood','tornado')) %>% mutate(Lat=LATITUDE/100.0,Lon=-1.0*LONGITUDE/100.0)
-
+# not 100% sure that the lat/long mapping is correct. Think that the Longitude needs that factor of -1. The LATTITUDE/LONGITUDE variables may be in degrees*100 + minutes, rather than decimal degrees*100. If so, then our coordinates might be off by up to 0.4 degrees. So there might be some inaccuracy in the coordinates used for plotting, but it shouldn't be a big deal.
 mapus2<-ggmap(get_map("usa",zoom=4),extent='device')
 ```
 
@@ -535,8 +569,13 @@ mapus2<-ggmap(get_map("usa",zoom=4),extent='device')
 ## Information from URL : http://maps.googleapis.com/maps/api/geocode/json?address=usa&sensor=false
 ```
 
+```
+## Warning: `panel.margin` is deprecated. Please use `panel.spacing` property
+## instead
+```
+
 ```r
-mapus2 + stat_density2d(data=floodnados,aes(x=Lon,y=Lat,fill=..level..,alpha=..level..,colour=EventType),bins = 6, geom = "polygon") + facet_wrap(~EventType,ncol=1) + theme(legend.position='none') + theme()
+mapus2 + stat_density2d(data=floodnados,aes(x=Lon,y=Lat,fill=..level..,alpha=..level..,colour=EventType),bins = 6, geom = "polygon") + facet_wrap(~EventType,ncol=1) + theme(legend.position='none') + theme() 
 ```
 
 ```
