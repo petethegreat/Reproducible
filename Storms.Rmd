@@ -8,7 +8,8 @@ NOAA Storm Data: Health and Economic Effects
 ==============================================================
 
 ## Introduction
-This project analyses 
+This project analyses information collected by the National Weather Service. The data is first cleaned and tidyed, and then used to determine which types of storms/weather events are most hazardous in terms of population health or damage costs. Finally, the distribution of certain storm types accross the US are shown, indicating which areas are most at risk.
+
 ```{r packages}
 opts_chunk$set(fig.width=8, fig.height=8,dpi=144)
 require(ggplot2)
@@ -298,6 +299,8 @@ summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,Total
 
 ```
 ### Across the United States, which types of events are most harmful with respect to population health?
+
+From the aggregated data, the number of casualties is computed for each event type as the sum of the total number of injuries and fatalities. The event types
 
 ```{r plot1, dependson=c('cleaning'),cache=TRUE}
 
