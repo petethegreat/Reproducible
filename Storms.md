@@ -8,7 +8,7 @@ NOAA Storm Data: Health and Economic Effects
 ==============================================================
 
 ## Introduction
-** Does the document have a synopsis that describes and summarizes the data analysis in less than 10 sentences? **
+This project analyses information collected by the National Weather Service. The data is first cleaned and tidyed, and then used to determine which types of storms/weather events are most hazardous in terms of population health or damage costs. Finally, the distribution of certain storm types accross the US are shown, indicating which areas are most at risk.
 
 
 ```r
@@ -55,6 +55,7 @@ require(ggmap)
 
 ## obtaining data
 The data for this analysis comes from the National Oceanic and Atmospheric Administration's National Weather Service. The (compressed) csv can be downloaded [from here](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2). The data for this analysis was downloaded on February 28, 2017.
+
 
 ```r
 destfile='StormData.csv.bz2'
@@ -111,6 +112,7 @@ str(stormData)
 ## Data Processing
 
 The Event type code (EVTYPE) is important, as it will be used to categorise the data. Unfortunately, there are many errors and inconsistencies in the raw data.
+
 
 ```r
 length(unique(stormData$EVTYPE))
@@ -320,6 +322,7 @@ length(unique(slim96$EventType))
 
 Regular expressions (implemented through the grepl and gsub functions) are used to rename event types. 
 
+
 ```r
 # remove things that can't be reclassified easily
 badcodes<-c("astronomical high tide","other","marine accident", "coastal storm","coastalstorm","beach erosion","glaze","mixed precip","dam break","coastal erosion" )
@@ -468,7 +471,8 @@ Does the analysis address the question of which types of events are most harmful
 Does the analysis address the question of which types of events have the greatest economic consequences?
 ** axis labels and units on all plots **
 
-The event types of interest are those which have the largest effects on population health or which highest costs in terms of property or crop damage. Instead of looking at individual storm events, it is useful to summarise the data based on the weather event type, as this gives a better idea of which storm types were most significant overall.
+The event types of interest are those which have the largest effects on population health or which have the highest costs in terms of property or crop damage. Instead of looking at individual storm events, it is useful to summarise the data based on the weather event type, as this gives a better idea of which storm types were most significant overall.
+
 
 ```r
 #Form total damage from crop and property damage
@@ -479,6 +483,8 @@ AggStorms<- slim96 %>% select(EventType,TotalDamage,FATALITIES,INJURIES) %>% gro
 summarise_each(funs(sum),TotalDamageSum=TotalDamage,TotalInjuries=INJURIES,TotalFatalities=FATALITIES)
 ```
 ### Across the United States, which types of events are most harmful with respect to population health?
+
+From the aggregated data, the number of casualties is computed for each event type as the sum of the total number of injuries and fatalities. The event types
 
 
 ```r
@@ -495,6 +501,7 @@ g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjus
 ### Across the United States, which types of events have the greatest economic consequences?
 
 What are the costliest (individual) events? Print the 10 storms with the highest damage (property + crop) costs.
+
 
 ```r
 slim96 %>% select(BGN_DATE,EventType,TotalDamage,LATITUDE,LONGITUDE) %>% arrange(desc(TotalDamage)) %>% head(n=10)
@@ -514,9 +521,10 @@ slim96 %>% select(BGN_DATE,EventType,TotalDamage,LATITUDE,LONGITUDE) %>% arrange
 ## 10 2004-09-04 hurricane (typhoon)   4923200000        0         0
 ```
 Many of these are from the [2005 Atlantic hurricane season](https://en.wikipedia.org/wiki/2005_Atlantic_hurricane_season)
-Hurricane Katrina was active during August 23-29, 2005, which accounts for 5 of 10 storms on this list. The October 24 storm (#5) corresponds to hurricane Rita, and the the 150 billion flood dated January first, 2006 is also [probably Katrina related] (https://www.ncdc.noaa.gov/billions/events).
+Hurricane Katrina was active during August 23-29, 2005, which accounts for 5 of 10 storms on this list. The October 24 storm (#5) corresponds to hurricane Rita, and the the 150 billion flood dated January first, 2006 is also [probably Katrina related](https://www.ncdc.noaa.gov/billions/events).
 
 Below is a bar chart of the 20 most damaging storm types.
+
 
 ```r
 damageStorms<-AggStorms %>% arrange(desc(TotalDamageSum)) %>% head(n=20)
@@ -526,6 +534,7 @@ g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjus
 ```
 
 ![plot of chunk plot1a](figure/plot1a-1.png)
+
 Floods are the most damaging event type, with a total cost of almost $150 billion USD. Note that most of this ($115 billion) is due to the flood on Jan 1, 2006. As mentioned earlier, this is presumably an effect of hurricane Katrina.
 
 
