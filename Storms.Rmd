@@ -331,7 +331,9 @@ Below is a bar chart of the 20 most damaging storm types.
 damageStorms<-AggStorms %>% arrange(desc(TotalDamageSum)) %>% head(n=20)
 
 g<-ggplot(data=damageStorms,aes(x=EventType,y=TotalDamageSum,fill=EventType))
-g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE)
+g+ geom_bar(stat='identity') + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + guides(fill=FALSE) +
+labs(title='Damage Costs for Weather Events',y='Damage ($)',x='Event Type')+
+labs(title='Casualties for Weather Events',y='Casualties',x='Event Type')
 ```
 
 Floods are the most damaging event type, with a total cost of almost $150 billion USD. Note that most of this ($115 billion) is due to the flood on Jan 1, 2006. As mentioned earlier, this is presumably an effect of hurricane Katrina.
@@ -350,7 +352,8 @@ The storm dataset contains information on lattitude and longitude. A map of the 
 floodnados<-slim96 %>% filter(EventType %in% c('flood','tornado')) %>% mutate(Lat=LATITUDE/100.0,Lon=-1.0*LONGITUDE/100.0)
 # not 100% sure that the lat/long mapping is correct. Think that the Longitude needs that factor of -1. The LATTITUDE/LONGITUDE variables may be in degrees*100 + minutes, rather than decimal degrees*100. If so, then our coordinates might be off by up to 0.4 degrees. So there might be some inaccuracy in the coordinates used for plotting, but it shouldn't be a big deal.
 mapus2<-ggmap(get_map("usa",zoom=4),extent='device')
-mapus2 + stat_density2d(data=floodnados,aes(x=Lon,y=Lat,fill=..level..,alpha=..level..,colour=EventType),bins = 6, geom = "polygon") + facet_wrap(~EventType,ncol=1) + theme(legend.position='none') + theme() 
+mapus2 + stat_density2d(data=floodnados,aes(x=Lon,y=Lat,fill=..level..,alpha=..level..,colour=EventType),bins = 6, geom = "polygon") + facet_wrap(~EventType,ncol=1) + theme(legend.position='none') + theme() + 
+labs(title='Flood and Tornado distribution across the US')
 
 ```
 
